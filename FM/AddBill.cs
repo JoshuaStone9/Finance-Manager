@@ -4,7 +4,6 @@ using System.Globalization;
 using System.Windows.Forms;
 using System.Linq;   // <-- add this
 
-
 namespace FM
 {
     public partial class AddBill : Form
@@ -36,6 +35,9 @@ namespace FM
         private Button btnSave;
         private Button btnViewBills;
         private Button btnViewAllPayments;
+
+        // NEW: Add Investment button
+        private Button btnAddInvestment;
 
         public AddBill()
         {
@@ -142,13 +144,24 @@ namespace FM
             };
             btnViewBills.Click += BtnViewBills_Click;
 
+            // NEW: Add Investment Button
+            btnAddInvestment = new Button
+            {
+                Text = "Add Investment",
+                Location = new Point(20, 430),   // left of Save; adjust if you like
+                Width = 120,
+                Height = 35,
+                TabIndex = 16
+            };
+            btnAddInvestment.Click += BtnAddInvestment_Click;
+
             btnViewAllPayments = new Button
             {
                 Text = "View All Payments",
                 Location = new Point(220, 470),
                 Width = 160,
                 Height = 35,
-                TabIndex = 15
+                TabIndex = 17
             };
             btnViewAllPayments.Click += BtnViewAllPayments_Click;
 
@@ -163,6 +176,7 @@ namespace FM
                 lblLength, cboLength,
                 lblDueDate, dtpDueDate,
                 lblDescription, txtDescription,
+                btnAddInvestment,  // NEW
                 btnSave, btnViewBills, btnViewAllPayments
             });
 
@@ -215,8 +229,6 @@ namespace FM
                 Description = txtDescription.Text.Trim()
             };
 
-
-
             // store in memory
             BillStore.Bills.Add(record);
 
@@ -238,6 +250,12 @@ namespace FM
             allPayments.Show();
         }
 
+        // NEW: open AddInvestment form
+        private void BtnAddInvestment_Click(object? sender, EventArgs e)
+        {
+            var addInvestment = new AddInvestment(); // ensure AddInvestment is in namespace FM
+            addInvestment.Show();
+        }
 
         // ===== Helpers =====
 
@@ -253,7 +271,7 @@ namespace FM
 
             // Unique Bill ID (in-memory check)
             var exists = BillStore.Bills.Any(b =>
-     string.Equals(b.BillId, txtBillId.Text.Trim(), StringComparison.OrdinalIgnoreCase));
+                string.Equals(b.BillId, txtBillId.Text.Trim(), StringComparison.OrdinalIgnoreCase));
             if (exists)
             {
                 txtBillId.BackColor = Color.MistyRose;
@@ -311,7 +329,7 @@ namespace FM
             txtBillId.Focus();
         }
 
-        // Optional getters if you still want them
+        // Optional getters
         public string EnteredBillId => txtBillId.Text.Trim();
         public string EnteredName => txtName.Text.Trim();
         public decimal EnteredAmount => decimal.TryParse(txtAmount.Text, out var v) ? v : 0m;
