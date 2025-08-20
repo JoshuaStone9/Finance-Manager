@@ -12,19 +12,16 @@ namespace FM
 
         private void btnSave_Click(object? sender, EventArgs e)
         {
-            // TODO: Persist this to your InvestmentStore / DB.
-            // Example shape you can adapt:
-            // var rec = new InvestmentRecord
-            // {
-            //     Name = txtName.Text,
-            //     Amount = numAmount.Value,
-            //     Date = dtDate.Value,
-            //     Category = cbCategory.SelectedItem?.ToString() ?? "",
-            //     Length = cbLength.SelectedItem?.ToString() ?? "",
-            //     Notes = txtNotes.Text
-            // };
-            // InvestmentStore.Add(rec);
-            // Close or clear form as desired.
+            var rec = new InvestmentRecord
+            {
+                Name = txtName.Text,
+                Amount = numAmount.Value,
+                Date = dtDate.Value,
+                Category = cbCategory.SelectedItem?.ToString() ?? "",
+                Length = cbLength.SelectedItem?.ToString() ?? "",
+                Notes = txtNotes.Text
+            };
+            InvestmentStore.Investments.Add(rec); // Fixed line
         }
 
         private void btnViewBills_Click(object? sender, EventArgs e)
@@ -35,8 +32,8 @@ namespace FM
 
         private void btnViewAllPayments_Click(object? sender, EventArgs e)
         {
-            // Optional: navigate to your Investments list screen.
-            // new InvestmentsRecord().Show(this);
+            AllPayments allPayments = new AllPayments();
+            allPayments.Show();
         }
     }
 }

@@ -31,6 +31,7 @@ namespace FM
             lblCategory = new Label();
             lblLength = new Label();
             lblNotes = new Label();
+            lblOtherInvestment = new Label();
 
             // Inputs
             txtName = new TextBox();
@@ -39,6 +40,7 @@ namespace FM
             cbCategory = new ComboBox();
             cbLength = new ComboBox();
             txtNotes = new TextBox();
+            txtOtherInvestment = new TextBox();
 
             // Buttons
             btnSave = new Button();
@@ -104,22 +106,44 @@ namespace FM
             cbCategory.Name = "cbCategory";
             cbCategory.Size = new Size(200, 23);
             cbCategory.TabIndex = 3;
-            // Add your categories here:
-            // cbCategory.Items.AddRange(new object[] { "Stocks", "ETF", "Crypto", "Real Estate", "Other" });
+            cbCategory.Items.AddRange(new object[] { "Stocks", "ETF", "Crypto", "Real Estate", "Other" });
+            cbCategory.SelectedIndexChanged += cbCategory_SelectedIndexChanged;
+
+            // --- Label: Other Investment ---
+            lblOtherInvestment.AutoSize = true;
+            lblOtherInvestment.Location = new Point(24, 184);
+            lblOtherInvestment.Name = "lblOtherInvestment";
+            lblOtherInvestment.Size = new Size(109, 15);
+            lblOtherInvestment.Text = "Other Investment:";
+            lblOtherInvestment.Visible = false;
+
+            // --- TextBox: Other Investment ---
+            txtOtherInvestment.Location = new Point(140, 181);
+            txtOtherInvestment.Name = "txtOtherInvestment";
+            txtOtherInvestment.Size = new Size(260, 23);
+            txtOtherInvestment.TabIndex = 4;
+            txtOtherInvestment.Visible = false;
+
+            if(cbCategory.SelectedItem?.ToString() == "Other")
+            {
+                lblOtherInvestment.Visible = true;
+                txtOtherInvestment.Visible = true;
+            }
+
 
             // --- Label: Length ---
             lblLength.AutoSize = true;
-            lblLength.Location = new Point(24, 184);
+            lblLength.Location = new Point(24, 224);
             lblLength.Name = "lblLength";
             lblLength.Size = new Size(47, 15);
             lblLength.Text = "Length:";
 
             // --- ComboBox: Length (matches your Bill input's cbLength) ---
             cbLength.DropDownStyle = ComboBoxStyle.DropDownList;
-            cbLength.Location = new Point(120, 181);
+            cbLength.Location = new Point(120, 221);
             cbLength.Name = "cbLength";
             cbLength.Size = new Size(200, 23);
-            cbLength.TabIndex = 4;
+            cbLength.TabIndex = 5;
             cbLength.Items.AddRange(new object[]
             {
                 "One-time",
@@ -132,39 +156,39 @@ namespace FM
 
             // --- Label: Notes ---
             lblNotes.AutoSize = true;
-            lblNotes.Location = new Point(24, 224);
+            lblNotes.Location = new Point(24, 264);
             lblNotes.Name = "lblNotes";
             lblNotes.Size = new Size(41, 15);
             lblNotes.Text = "Notes:";
 
             // --- TextBox: Notes (multiline) ---
-            txtNotes.Location = new Point(120, 221);
+            txtNotes.Location = new Point(120, 261);
             txtNotes.Multiline = true;
             txtNotes.Name = "txtNotes";
             txtNotes.Size = new Size(360, 80);
-            txtNotes.TabIndex = 5;
+            txtNotes.TabIndex = 6;
 
             // --- Buttons ---
-            btnSave.Location = new Point(120, 320);
+            btnSave.Location = new Point(120, 360);
             btnSave.Name = "btnSave";
             btnSave.Size = new Size(100, 30);
-            btnSave.TabIndex = 6;
+            btnSave.TabIndex = 7;
             btnSave.Text = "Save";
             btnSave.UseVisualStyleBackColor = true;
             btnSave.Click += btnSave_Click;
 
-            btnViewBills.Location = new Point(230, 320);
+            btnViewBills.Location = new Point(230, 360);
             btnViewBills.Name = "btnViewBills";
             btnViewBills.Size = new Size(120, 30);
-            btnViewBills.TabIndex = 7;
+            btnViewBills.TabIndex = 8;
             btnViewBills.Text = "View Bills";
             btnViewBills.UseVisualStyleBackColor = true;
             btnViewBills.Click += btnViewBills_Click;
 
-            btnViewAllPayments.Location = new Point(360, 320);
+            btnViewAllPayments.Location = new Point(360, 360);
             btnViewAllPayments.Name = "btnViewAllPayments";
             btnViewAllPayments.Size = new Size(160, 30);
-            btnViewAllPayments.TabIndex = 8;
+            btnViewAllPayments.TabIndex = 9;
             btnViewAllPayments.Text = "View All Payments";
             btnViewAllPayments.UseVisualStyleBackColor = true;
             btnViewAllPayments.Click += btnViewAllPayments_Click;
@@ -172,7 +196,7 @@ namespace FM
             // --- Form settings ---
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(520, 370);
+            ClientSize = new Size(520, 410);
             Controls.Add(lblName);
             Controls.Add(txtName);
             Controls.Add(lblAmount);
@@ -181,6 +205,8 @@ namespace FM
             Controls.Add(dtDate);
             Controls.Add(lblCategory);
             Controls.Add(cbCategory);
+            Controls.Add(lblOtherInvestment);
+            Controls.Add(txtOtherInvestment);
             Controls.Add(lblLength);
             Controls.Add(cbLength);
             Controls.Add(lblNotes);
@@ -197,6 +223,20 @@ namespace FM
             PerformLayout();
         }
 
+        private void cbCategory_SelectedIndexChanged(object sender, System.EventArgs e)
+        {
+            if (cbCategory.SelectedItem.ToString() == "Other")
+            {
+                lblOtherInvestment.Visible = true;
+                txtOtherInvestment.Visible = true;
+            }
+            else
+            {
+                lblOtherInvestment.Visible = false;
+                txtOtherInvestment.Visible = false;
+            }
+        }
+
         #endregion
 
         private Label lblName;
@@ -205,6 +245,7 @@ namespace FM
         private Label lblCategory;
         private Label lblLength;
         private Label lblNotes;
+        private Label lblOtherInvestment;
 
         private TextBox txtName;
         private NumericUpDown numAmount;
@@ -212,6 +253,7 @@ namespace FM
         private ComboBox cbCategory;
         public ComboBox cbLength; // public if other code references it like your Bill form
         private TextBox txtNotes;
+        private TextBox txtOtherInvestment;
 
         private Button btnSave;
         private Button btnViewBills;

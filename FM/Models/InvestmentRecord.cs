@@ -1,7 +1,4 @@
-﻿using System;
-
-namespace FM
-{
+﻿
     public class InvestmentRecord
     {
         public string Investment_ID { get; set; } = "";
@@ -12,4 +9,4 @@ namespace FM
         public DateTime Date { get; set; }           // purchase/start date
         public string Description { get; set; } = "";
     }
-}
+

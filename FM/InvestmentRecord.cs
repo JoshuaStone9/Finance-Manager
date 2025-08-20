@@ -52,4 +52,15 @@ namespace FM
                 InvestmentStore.Investments.Remove(rec!);
         }
     }
+
+    public class InvestmentRecord
+    {
+        public string Investment_ID { get; set; }
+        public string Name { get; set; }
+        public decimal Amount { get; set; }
+        public string Category { get; set; }
+        public string Length { get; set; }
+        public DateTime Date { get; set; }
+        public string Notes { get; set; } // Added this property
+    }
 }
