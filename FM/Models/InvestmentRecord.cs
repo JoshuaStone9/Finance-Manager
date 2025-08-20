@@ -4,7 +4,7 @@ namespace FM
 {
     public class InvestmentRecord
     {
-        public string InvestmentId { get; set; } = "";
+        public string Investment_ID { get; set; } = "";
         public string Name { get; set; } = "";
         public decimal Amount { get; set; }
         public string Category { get; set; } = "";   // e.g., Stocks, ETF, Crypto, Real Estate
