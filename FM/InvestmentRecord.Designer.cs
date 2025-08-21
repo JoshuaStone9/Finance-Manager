@@ -3,7 +3,7 @@ using System.Windows.Forms;
 
 namespace FM
 {
-    partial class InvestmentsRecord
+    partial class InvestmentsRecord : Form
     {
         private System.ComponentModel.IContainer? components = null;
         private DataGridView gridInvestments;

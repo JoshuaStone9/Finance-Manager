@@ -41,6 +41,8 @@ namespace FM
 
         public AddBill()
         {
+           
+
             Text = "Add Bill";
             ClientSize = new Size(520, 520);
             StartPosition = FormStartPosition.CenterScreen;

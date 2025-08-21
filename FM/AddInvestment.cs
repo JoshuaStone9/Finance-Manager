@@ -19,9 +19,9 @@ namespace FM
                 Date = dtDate.Value,
                 Category = cbCategory.SelectedItem?.ToString() ?? "",
                 Length = cbLength.SelectedItem?.ToString() ?? "",
-                Notes = txtNotes.Text
+                Description = txtNotes.Text // Fixed: use Description property instead of Notes
             };
-            InvestmentStore.Investments.Add(rec); // Fixed line
+            InvestmentStore.Investments.Add(rec);
         }
 
         private void btnViewBills_Click(object? sender, EventArgs e)
