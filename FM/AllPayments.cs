@@ -10,9 +10,11 @@ namespace FM
     {
         private readonly BindingSource _bsBills = new();
         private readonly BindingSource _bsInv = new();
+        private readonly BindingSource _bsExtExp = new();
 
         private readonly DataGridView gridBills = new() { ReadOnly = true };
         private readonly DataGridView gridInvestments = new() { ReadOnly = true };
+        private readonly DataGridView gridExpenses = new() { ReadOnly = true };
 
         private TextBox txtGrandTotal;
         private Label lblGrandTotal;
@@ -46,6 +48,15 @@ namespace FM
             gridInvestments.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             Controls.Add(gridInvestments);
 
+            // Investments grid
+            gridExpenses.Location = new Point(16, 660);
+            gridExpenses.Size = new Size(960, 220);
+            gridExpenses.AllowUserToAddRows = false;
+            gridExpenses.AllowUserToDeleteRows = false;
+            gridExpenses.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            gridExpenses.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            Controls.Add(gridExpenses);
+
             // Total box at bottom-right
             lblGrandTotal = new Label
             {
@@ -68,6 +79,7 @@ namespace FM
             // Bind grids
             BillsDataGrid();
             InvestmentsDataGrid();
+            ExtraExpenseDataGrid();
 
             // Keep total updated whenever lists change
             BillStore.Bills.ListChanged += (_, __) => UpdateTotal();
@@ -89,6 +101,13 @@ namespace FM
             _bsInv.DataSource = InvestmentStore.Investments; // BindingList<InvestmentRecord>
             gridInvestments.AutoGenerateColumns = true;
             gridInvestments.DataSource = _bsInv;
+        }
+
+        private void ExtraExpenseDataGrid()
+        {
+            _bsExtExp.DataSource = ExtraExpenseStore.Expenses; // BindingList<InvestmentRecord>
+            gridExpenses.AutoGenerateColumns = true;
+            gridExpenses.DataSource = _bsExtExp;
         }
 
         private void UpdateTotal()

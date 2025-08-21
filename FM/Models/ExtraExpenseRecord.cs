@@ -2,7 +2,7 @@
 
     public class ExtraExpenseRecord
     {
-        public string ExpenseId { get; set; } = "";
+        public string Expense_ID { get; set; } = "";
         public string Name { get; set; } = "";
         public decimal Amount { get; set; }
         public string Category { get; set; } = "Other";

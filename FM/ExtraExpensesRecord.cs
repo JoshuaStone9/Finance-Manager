@@ -6,7 +6,7 @@ namespace FM
 {
     public partial class ExtraExpensesRecord : Form
     {
-        private readonly BindingSource _bs = new();
+        private readonly BindingSource _bsExtExp = new();
 
         // Add this declaration for gridExpenses
         private DataGridView gridExpenses;
@@ -50,16 +50,16 @@ namespace FM
         private void SetupGrid()
         {
             // Binding to store (make sure ExtraExpenseStore.Expenses is BindingList<ExtraExpenseRecord>)
-            _bs.DataSource = ExtraExpenseStore.Expenses;
+            _bsExtExp.DataSource = ExtraExpenseStore.Expenses;
             gridExpenses.AutoGenerateColumns = false;
-            gridExpenses.DataSource = _bs;
+            gridExpenses.DataSource = _bsExtExp;
 
             gridExpenses.Columns.Clear();
 
             // Expense ID
             gridExpenses.Columns.Add(new DataGridViewTextBoxColumn
             {
-                DataPropertyName = nameof(ExtraExpenseRecord.ExpenseId),
+                DataPropertyName = nameof(ExtraExpenseRecord.Expense_ID),
                 HeaderText = "Expense ID",
                 MinimumWidth = 120,
                 ReadOnly = true
@@ -178,7 +178,7 @@ namespace FM
     // Your data model for extra expenses
     public class ExtraExpenseRecord
     {
-        public string ExpenseId { get; set; }
+        public string Expense_ID { get; set; }
         public string Name { get; set; }
         public decimal Amount { get; set; }
         public string Category { get; set; }

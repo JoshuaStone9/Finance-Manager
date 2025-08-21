@@ -10,8 +10,8 @@ namespace FM
     {
         private Label lblTitle;
 
-        private Label lblExpenseId;
-        private TextBox txtExpenseId;
+        private Label lblExpense_ID;
+        private TextBox txtExpense_ID;
 
         private Label lblName;
         private TextBox txtName;
@@ -54,8 +54,8 @@ namespace FM
             };
 
             // Expense ID
-            lblExpenseId = new Label { Text = "Expense ID", Location = new Point(20, 60), AutoSize = true, TabIndex = 0 };
-            txtExpenseId = new TextBox { Location = new Point(160, 56), Width = 180, TabIndex = 1 };
+            lblExpense_ID = new Label { Text = "Expense ID", Location = new Point(20, 60), AutoSize = true, TabIndex = 0 };
+            txtExpense_ID = new TextBox { Location = new Point(160, 56), Width = 180, TabIndex = 1 };
 
             // Name
             lblName = new Label { Text = "Name", Location = new Point(20, 100), AutoSize = true, TabIndex = 2 };
@@ -170,7 +170,7 @@ namespace FM
             Controls.AddRange(new Control[]
             {
                 lblTitle,
-                lblExpenseId, txtExpenseId,
+                lblExpense_ID, txtExpense_ID,
                 lblName, txtName,
                 lblAmount, lblPound, txtAmount,
                 lblCategory, cboCategory,
@@ -210,7 +210,7 @@ namespace FM
 
             var rec = new ExtraExpenseRecord
             {
-                ExpenseId = txtExpenseId.Text.Trim(),
+                Expense_ID = txtExpense_ID.Text.Trim(),
                 Name = txtName.Text.Trim(),
                 Amount = amount,
                 Category = cboCategory.SelectedItem?.ToString() ?? "Other",
@@ -228,8 +228,8 @@ namespace FM
 
         private void BtnViewExpenses_Click(object? sender, EventArgs e)
         {
-            // TODO: replace with your actual listing form
-            MessageBox.Show($"Total extra expenses: {ExtraExpenseStore.Expenses.Count}", "Extra Expenses");
+            ExtraExpensesRecord expenses = new ExtraExpensesRecord();
+            expenses.Show();
         }
 
         private void BtnViewAllPayments_Click(object? sender, EventArgs e)
@@ -245,17 +245,17 @@ namespace FM
         {
             amount = 0m;
 
-            if (string.IsNullOrWhiteSpace(txtExpenseId.Text))
+            if (string.IsNullOrWhiteSpace(txtExpense_ID.Text))
             {
-                txtExpenseId.BackColor = Color.MistyRose;
+                txtExpense_ID.BackColor = Color.MistyRose;
                 return "Please enter an Expense ID.";
             }
 
             // Unique ID check
             if (ExtraExpenseStore.Expenses.Any(x =>
-                string.Equals(x.ExpenseId, txtExpenseId.Text.Trim(), StringComparison.OrdinalIgnoreCase)))
+                string.Equals(x.Expense_ID, txtExpense_ID.Text.Trim(), StringComparison.OrdinalIgnoreCase)))
             {
-                txtExpenseId.BackColor = Color.MistyRose;
+                txtExpense_ID.BackColor = Color.MistyRose;
                 return "That Expense ID already exists. Use a unique ID.";
             }
 
@@ -296,7 +296,7 @@ namespace FM
 
         private void ResetFieldBackColors()
         {
-            txtExpenseId.BackColor = SystemColors.Window;
+            txtExpense_ID.BackColor = SystemColors.Window;
             txtName.BackColor = SystemColors.Window;
             txtAmount.BackColor = SystemColors.Window;
             cboCategory.BackColor = SystemColors.Window;
@@ -306,7 +306,7 @@ namespace FM
 
         private void ClearForNext()
         {
-            txtExpenseId.Clear();
+            txtExpense_ID.Clear();
             txtName.Clear();
             txtAmount.Clear();
             cboCategory.SelectedIndex = 0;
@@ -316,7 +316,7 @@ namespace FM
             dtpDate.Value = DateTime.Today;
             txtNotes.Clear();
 
-            txtExpenseId.Focus();
+            txtExpense_ID.Focus();
         }
     }
 }
