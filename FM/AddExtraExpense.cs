@@ -38,12 +38,21 @@ namespace FM
         private Button btnSave;
         private Button btnViewExpenses;
         private Button btnViewAllPayments;
+        private Button btnMainMenu;
+
+        private Panel bottomPanel;
 
         public AddExtraExpense()
         {
             Text = "Add Extra Expense";
             ClientSize = new Size(560, 540);
             StartPosition = FormStartPosition.CenterScreen;
+
+            bottomPanel = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 100
+            };
 
             lblTitle = new Label
             {
@@ -138,7 +147,7 @@ namespace FM
             btnSave = new Button
             {
                 Text = "Save",
-                Location = new Point(160, 465),
+                Location = new Point(160, 15),
                 Width = 120,
                 Height = 36,
                 TabIndex = 16
@@ -149,7 +158,7 @@ namespace FM
             btnViewExpenses = new Button
             {
                 Text = "View Expenses",
-                Location = new Point(290, 465),
+                Location = new Point(300, 15),
                 Width = 200,
                 Height = 36,
                 TabIndex = 17
@@ -160,12 +169,29 @@ namespace FM
             btnViewAllPayments = new Button
             {
                 Text = "View All Payments",
-                Location = new Point(160, 505),
+                Location = new Point(300, 60),
                 Width = 200,
-                Height = 30,
+                Height = 35,
                 TabIndex = 18
             };
+
+            btnMainMenu = new Button
+            {
+                Text = "Main Menu",
+                Location = new Point(160, 60),
+                Width = 120,
+                Height = 35,
+                TabIndex = 17
+            };
+            btnMainMenu.Click += BtnMainMenu_Click;
+
+
             btnViewAllPayments.Click += BtnViewAllPayments_Click;
+
+            bottomPanel.Controls.AddRange(new Control[]
+           {
+             btnSave, btnViewExpenses, btnMainMenu, btnViewAllPayments
+           });
 
             Controls.AddRange(new Control[]
             {
@@ -178,7 +204,7 @@ namespace FM
                 lblFrequency, cboFrequency,
                 lblDate, dtpDate,
                 lblNotes, txtNotes,
-                btnSave, btnViewExpenses, btnViewAllPayments
+                bottomPanel,
             });
 
             // Defaults + events
@@ -199,6 +225,7 @@ namespace FM
 
         private void BtnSave_Click(object? sender, EventArgs e)
         {
+
             ResetFieldBackColors();
 
             string? error = ValidateInputs(out decimal amount);
@@ -230,6 +257,11 @@ namespace FM
         {
             ExtraExpensesRecord expenses = new ExtraExpensesRecord();
             expenses.Show();
+        }
+
+        private void BtnMainMenu_Click(object? sender, EventArgs e)
+        {
+            this.Close();
         }
 
         private void BtnViewAllPayments_Click(object? sender, EventArgs e)

@@ -66,7 +66,6 @@ C:\Users\Admin\source\repos\JoshuaStone9\Finance-Manager\FM\bin\Debug\net9.0-win
 C:\Users\Admin\source\repos\JoshuaStone9\Finance-Manager\FM\bin\Debug\net9.0-windows\FM.pdb
 C:\Users\Admin\source\repos\JoshuaStone9\Finance-Manager\FM\obj\Debug\net9.0-windows\FM.genruntimeconfig.cache
 C:\Users\Admin\source\repos\JoshuaStone9\Finance-Manager\FM\obj\Debug\net9.0-windows\ref\FM.dll
-C:\Users\Admin\source\repos\JoshuaStone9\Finance-Manager\FM\obj\Debug\net9.0-windows\FM.ExtraExpensesRecord.resources
 C:\Users\Lucy\source\repos\JoshuaStone9\Finance-Manager\FM\bin\Debug\net9.0-windows\FM.exe
 C:\Users\Lucy\source\repos\JoshuaStone9\Finance-Manager\FM\bin\Debug\net9.0-windows\FM.deps.json
 C:\Users\Lucy\source\repos\JoshuaStone9\Finance-Manager\FM\bin\Debug\net9.0-windows\FM.runtimeconfig.json
@@ -91,3 +90,4 @@ C:\Users\Lucy\source\repos\JoshuaStone9\Finance-Manager\FM\obj\Debug\net9.0-wind
 C:\Users\Lucy\source\repos\JoshuaStone9\Finance-Manager\FM\obj\Debug\net9.0-windows\FM.genruntimeconfig.cache
 C:\Users\Lucy\source\repos\JoshuaStone9\Finance-Manager\FM\obj\Debug\net9.0-windows\ref\FM.dll
 C:\Users\Lucy\source\repos\JoshuaStone9\Finance-Manager\FM\obj\Debug\net9.0-windows\FM.InvestmentRecord.resources
+C:\Users\Admin\source\repos\JoshuaStone9\Finance-Manager\FM\obj\Debug\net9.0-windows\FM.InvestmentRecord.resources

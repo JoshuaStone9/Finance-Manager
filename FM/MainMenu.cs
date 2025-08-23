@@ -61,6 +61,7 @@ namespace FM
             extraExpensesButton.Size = new Size(200, 40);
             extraExpensesButton.Location = new Point(100, 170);
             extraExpensesButton.Visible = false;
+            extraExpensesButton.Click += ExtraExpenseButton_Click;
 
             // Savings Button
             savingsButton = new Button();
@@ -116,12 +117,19 @@ namespace FM
         {
             AddBill billForm = new AddBill();
             billForm.Show();
+
         }
 
         private void InvestmentsButton_Click(object sender, EventArgs e)
         {
             AddInvestment investForm = new AddInvestment();
             investForm.Show();
+        }
+
+        private void ExtraExpenseButton_Click(object sender, EventArgs e)
+        {
+            AddExtraExpense addExtraExpenseForm = new AddExtraExpense();
+            addExtraExpenseForm.Show();
         }
 
         private void AllPaymentsButton_Click(object sender, EventArgs e)

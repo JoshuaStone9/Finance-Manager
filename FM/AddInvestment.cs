@@ -30,6 +30,13 @@ namespace FM
             investements.Show();
         }
 
+        private void BtnMainMenu_Click(object? sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+
+
         private void btnViewAllPayments_Click(object? sender, EventArgs e)
         {
             AllPayments allPayments = new AllPayments();

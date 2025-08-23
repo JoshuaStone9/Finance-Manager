@@ -1,8 +1,8 @@
 using System;
 using System.Drawing;
 using System.Globalization;
+using System.Linq;
 using System.Windows.Forms;
-using System.Linq;   // <-- add this
 
 namespace FM
 {
@@ -34,18 +34,23 @@ namespace FM
 
         private Button btnSave;
         private Button btnViewBills;
+        private Button btnMainMenu;
         private Button btnViewAllPayments;
 
-        // NEW: Add Investment button
         private Button btnAddInvestment;
+
+        // Bottom container to keep buttons visible on any DPI
+        private Panel bottomPanel;
 
         public AddBill()
         {
-           
-
+            // ---- Form ----
             Text = "Add Bill";
-            ClientSize = new Size(520, 520);
+            ClientSize = new Size(520, 560); // a bit taller for comfortable spacing
             StartPosition = FormStartPosition.CenterScreen;
+            DoubleBuffered = true;
+
+            SuspendLayout();
 
             lblAddBill = new Label
             {
@@ -58,6 +63,8 @@ namespace FM
             // Bill ID
             lblBillId = new Label { Text = "Bill ID", Location = new Point(20, 60), AutoSize = true, TabIndex = 0 };
             txtBillId = new TextBox { Location = new Point(160, 56), Width = 160, TabIndex = 1 };
+            txtBillId.Text = IdGenerator.GetNextId().ToString();
+            txtBillId.ReadOnly = true;
 
             // Name
             lblName = new Label { Text = "Name", Location = new Point(20, 100), AutoSize = true, TabIndex = 2 };
@@ -118,56 +125,75 @@ namespace FM
             {
                 Location = new Point(160, 296),
                 Width = 300,
-                Height = 120,
+                Height = 140,
                 Multiline = true,
                 ScrollBars = ScrollBars.Vertical,
                 TabIndex = 13
             };
 
-            // Save button
-            btnSave = new Button
+            // ---- Bottom button panel (always visible) ----
+            bottomPanel = new Panel
             {
-                Text = "Save",
-                Location = new Point(160, 430),
-                Width = 120,
-                Height = 35,
-                TabIndex = 14
+                Dock = DockStyle.Bottom,
+                Height = 110
             };
-            btnSave.Click += BtnSave_Click;
 
-            // View Bills Button
-            btnViewBills = new Button
-            {
-                Text = "View Bills",
-                Location = new Point(300, 430),
-                Width = 160,
-                Height = 35,
-                TabIndex = 15
-            };
-            btnViewBills.Click += BtnViewBills_Click;
-
-            // NEW: Add Investment Button
             btnAddInvestment = new Button
             {
                 Text = "Add Investment",
-                Location = new Point(20, 430),   // left of Save; adjust if you like
+                Location = new Point(20, 15),
                 Width = 120,
                 Height = 35,
                 TabIndex = 16
             };
             btnAddInvestment.Click += BtnAddInvestment_Click;
 
-            btnViewAllPayments = new Button
+            btnSave = new Button
             {
-                Text = "View All Payments",
-                Location = new Point(220, 470),
+                Text = "Save",
+                Location = new Point(160, 15),
+                Width = 120,
+                Height = 35,
+                TabIndex = 14
+            };
+            btnSave.Click += BtnSave_Click;
+
+            btnViewBills = new Button
+            {
+                Text = "View Bills",
+                Location = new Point(300, 15),
                 Width = 160,
+                Height = 35,
+                TabIndex = 15
+            };
+            btnViewBills.Click += BtnViewBills_Click;
+
+            btnMainMenu = new Button
+            {
+                Text = "Main Menu",
+                Location = new Point(160, 60),
+                Width = 120,
                 Height = 35,
                 TabIndex = 17
             };
+            btnMainMenu.Click += BtnMainMenu_Click;
+
+            btnViewAllPayments = new Button
+            {
+                Text = "View All Payments",
+                Location = new Point(300, 60),
+                Width = 160,
+                Height = 35,
+                TabIndex = 18
+            };
             btnViewAllPayments.Click += BtnViewAllPayments_Click;
 
-            // Add controls
+            bottomPanel.Controls.AddRange(new Control[]
+            {
+                btnAddInvestment, btnSave, btnViewBills, btnMainMenu, btnViewAllPayments
+            });
+
+            // ---- Add controls to form ----
             Controls.AddRange(new Control[]
             {
                 lblAddBill,
@@ -178,18 +204,15 @@ namespace FM
                 lblLength, cboLength,
                 lblDueDate, dtpDueDate,
                 lblDescription, txtDescription,
-                btnAddInvestment,  // NEW
-                btnSave, btnViewBills, btnViewAllPayments
+                bottomPanel // add last so it docks correctly
             });
 
-            // Set default selection without event hooked
-            cboType.SelectedIndex = 0;
-
-            // Ensure initial visibility
+            // Defaults + events
+            cboType.SelectedIndex = 0; // default Permanent
             CboType_SelectedIndexChanged(this, EventArgs.Empty);
-
-            // Hook event
             cboType.SelectedIndexChanged += CboType_SelectedIndexChanged;
+
+            ResumeLayout(false);
         }
 
         private void CboType_SelectedIndexChanged(object? sender, EventArgs e)
@@ -208,10 +231,8 @@ namespace FM
 
         private void BtnSave_Click(object? sender, EventArgs e)
         {
-            // reset visual cues
             ResetFieldBackColors();
 
-            // validate
             string? error = ValidateInputs(out decimal amount);
             if (error != null)
             {
@@ -219,7 +240,6 @@ namespace FM
                 return;
             }
 
-            // build record
             var record = new BillRecord
             {
                 BillId = txtBillId.Text.Trim(),
@@ -231,12 +251,9 @@ namespace FM
                 Description = txtDescription.Text.Trim()
             };
 
-            // store in memory
             BillStore.Bills.Add(record);
 
             MessageBox.Show("Bill saved.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            // optional: clear for next entry
             ClearFormForNext();
         }
 
@@ -246,32 +263,42 @@ namespace FM
             manageBills.Show();
         }
 
+        private void BtnMainMenu_Click(object? sender, EventArgs e)
+        {
+            this.Close();
+        }
+
         private void BtnViewAllPayments_Click(object? sender, EventArgs e)
         {
             var allPayments = new AllPayments();
             allPayments.Show();
         }
 
-        // NEW: open AddInvestment form
         private void BtnAddInvestment_Click(object? sender, EventArgs e)
         {
-            var addInvestment = new AddInvestment(); // ensure AddInvestment is in namespace FM
+            var addInvestment = new AddInvestment();
             addInvestment.Show();
         }
 
         // ===== Helpers =====
 
+        public static class IdGenerator
+        {
+         
+            private static int _nextId = 1;
+            
+            public static int GetNextId()
+            {
+                return _nextId++;
+            }
+  
+        }
+
         private string? ValidateInputs(out decimal amount)
         {
             amount = 0m;
 
-            if (string.IsNullOrWhiteSpace(txtBillId.Text))
-            {
-                txtBillId.BackColor = Color.MistyRose;
-                return "Please enter a Bill ID.";
-            }
 
-            // Unique Bill ID (in-memory check)
             var exists = BillStore.Bills.Any(b =>
                 string.Equals(b.BillId, txtBillId.Text.Trim(), StringComparison.OrdinalIgnoreCase));
             if (exists)
@@ -286,14 +313,12 @@ namespace FM
                 return "Please enter a Name.";
             }
 
-            // robust decimal parse (accepts current culture)
             if (!decimal.TryParse(txtAmount.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out amount) || amount <= 0)
             {
                 txtAmount.BackColor = Color.MistyRose;
                 return "Please enter a valid Amount greater than 0.";
             }
 
-            // optional date rule: due date cannot be too far in the past
             if (dtpDueDate.Value.Date < DateTime.Today.AddDays(-1))
             {
                 dtpDueDate.CalendarMonthBackground = Color.MistyRose;
@@ -327,7 +352,6 @@ namespace FM
             cboLength.SelectedIndex = 0;
             dtpDueDate.Value = DateTime.Today;
             txtDescription.Clear();
-
             txtBillId.Focus();
         }
 
