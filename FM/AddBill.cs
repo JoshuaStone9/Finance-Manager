@@ -3,6 +3,8 @@ using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
+using Npgsql;
+using System.Data;
 
 namespace FM
 {
@@ -363,5 +365,48 @@ namespace FM
         public string SelectedLength => cboLength.Visible ? cboLength.SelectedItem?.ToString() ?? "Not Sure" : "Not Applicable";
         public DateTime DueDate => dtpDueDate.Value.Date;
         public string DescriptionText => txtDescription.Text.Trim();
+
+        private void CreateAndLoadBillsTable()
+        {
+            string cs = "Host=localhost;Database=Finance_Manager;Username=admin;Password=banana001;SslMode=Disable";
+
+            using var conn = new NpgsqlConnection(cs);
+            conn.Open();
+
+            // Create tables if not exist
+            using (var cmd = new NpgsqlCommand(@"
+CREATE TABLE IF NOT EXISTS bills(
+  billid SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  amount NUMERIC(12,2) NOT NULL,
+  type TEXT,
+  length TEXT,
+  duedate DATE,
+  description TEXT
+);", conn))
+            {
+                cmd.ExecuteNonQuery();
+            }
+
+            // Insert
+            using (var cmd = new NpgsqlCommand(
+                "INSERT INTO bills(name,amount,type,length,duedate,description) VALUES(@n,@a,@t,@l,@d,@desc)", conn))
+            {
+                cmd.Parameters.AddWithValue("@n", "Electric");
+                cmd.Parameters.AddWithValue("@a", 64.99m);
+                cmd.Parameters.AddWithValue("@t", "Permanent");
+                cmd.Parameters.AddWithValue("@l", (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@d", DateTime.Today);
+                cmd.Parameters.AddWithValue("@desc", "Monthly");
+                cmd.ExecuteNonQuery();
+            }
+
+            // Load into DataTable (bind to DataGridView)
+            var dt = new DataTable();
+            using (var cmd = new NpgsqlCommand("SELECT billid,name,amount,duedate FROM bills ORDER BY duedate DESC", conn))
+            using (var rdr = cmd.ExecuteReader()) dt.Load(rdr);
+
+            // e.g. gridBills.DataSource = dt;
+        }
     }
 }

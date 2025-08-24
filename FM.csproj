@@ -1,0 +1,258 @@
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProjectGuid>{683C421B-1BC6-8A65-4B3B-1C161DE60429}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <NoStandardLibraries>false</NoStandardLibraries>
+    <AssemblyName>WindowsApplication</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RootNamespace>FM</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".gitignore" />
+    <None Include=".git\COMMIT_EDITMSG" />
+    <None Include=".git\config" />
+    <None Include=".git\description" />
+    <None Include=".git\HEAD" />
+    <None Include=".git\hooks\applypatch-msg.sample" />
+    <None Include=".git\hooks\commit-msg.sample" />
+    <None Include=".git\hooks\fsmonitor-watchman.sample" />
+    <None Include=".git\hooks\post-update.sample" />
+    <None Include=".git\hooks\pre-applypatch.sample" />
+    <None Include=".git\hooks\pre-commit.sample" />
+    <None Include=".git\hooks\pre-merge-commit.sample" />
+    <None Include=".git\hooks\pre-push.sample" />
+    <None Include=".git\hooks\pre-rebase.sample" />
+    <None Include=".git\hooks\pre-receive.sample" />
+    <None Include=".git\hooks\prepare-commit-msg.sample" />
+    <None Include=".git\hooks\push-to-checkout.sample" />
+    <None Include=".git\hooks\sendemail-validate.sample" />
+    <None Include=".git\hooks\update.sample" />
+    <None Include=".git\index" />
+    <None Include=".git\info\exclude" />
+    <None Include=".git\logs\HEAD" />
+    <None Include=".git\logs\refs\heads\main" />
+    <None Include=".git\logs\refs\remotes\origin\HEAD" />
+    <None Include=".git\logs\refs\remotes\origin\main" />
+    <None Include=".git\objects\01\a65c0f1aaa8c435959ce2e9c1ef0b7068f0f5c" />
+    <None Include=".git\objects\08\6d0f7ee3b0d20c529838fa1a356e4397bbcf71" />
+    <None Include=".git\objects\17\3827f48e2c2522c2af59c598a2bd361d671abc" />
+    <None Include=".git\objects\22\4c3c971c61182901c303f1591fbb6e84775adf" />
+    <None Include=".git\objects\23\57491b289a391ddce937daf12ddc1e50ee2347" />
+    <None Include=".git\objects\26\4bcf888afefe3af8c32fa597c5cfe36956f4a5" />
+    <None Include=".git\objects\2b\ba33002984467fa62bda8cd22a8dfb92a3d4ea" />
+    <None Include=".git\objects\3a\f4adc8adb89e37344c361ad66673ddda58f74e" />
+    <None Include=".git\objects\43\c9b3c47f50ac1d1cc593730d9f97d0fdb77133" />
+    <None Include=".git\objects\44\97ab5a512beacf3008e87c65e6482b956ad2e0" />
+    <None Include=".git\objects\45\58884172b6ddaaee4823a0b92dd653c4c938f7" />
+    <None Include=".git\objects\46\f317ca28f9855e1bba5a6ea2d74d7b3ff53e61" />
+    <None Include=".git\objects\4a\f3c8de71ae34c86dd7f28ef8c9a7d24435f979" />
+    <None Include=".git\objects\56\101270ee0e1eb227a381a5a48c12054befe08d" />
+    <None Include=".git\objects\61\912a3713ea59cca854c0c792b5d8f578c24f25" />
+    <None Include=".git\objects\61\a9732e20837eb432f2d70ef4d184adfbe6683d" />
+    <None Include=".git\objects\62\91963a37803d16f140be26a89c71c6fd91721f" />
+    <None Include=".git\objects\86\cb8dd41ab769ffb32f60f154186c910d36fdab" />
+    <None Include=".git\objects\87\badc9609c6ca99b49960209bbc668609c7771d" />
+    <None Include=".git\objects\9d\563e9e360e3f4a1218bbb4340b9a6be9b9abdb" />
+    <None Include=".git\objects\b1\af2c869a71e85ba3f59076eb67b534097fc08a" />
+    <None Include=".git\objects\cc\64dc60107899b12f09fb8807e8451473074c11" />
+    <None Include=".git\objects\cf\05650c564ae074dc01b0e9d0af3509d9eac043" />
+    <None Include=".git\objects\d5\d7ec052a463bb7f5ad7a902be1be6e61a7a9fb" />
+    <None Include=".git\objects\d8\d56b7d1935aa488d2aebbcbdf67b2bb1263f29" />
+    <None Include=".git\objects\e5\ff5e24610e388bc69608ebb8801597a428f469" />
+    <None Include=".git\objects\f4\2a797b651ce5e392db0a994c5614c046343d41" />
+    <None Include=".git\objects\f6\3bcdec7b2da1cb7ba03cd626fddb467b1939a7" />
+    <None Include=".git\objects\fe\ccf4859ced1370a2a9380fac9e6440a80d359d" />
+    <None Include=".git\objects\pack\pack-3432ddd199d59663a4db3f610f54707f9091db43.idx" />
+    <None Include=".git\objects\pack\pack-3432ddd199d59663a4db3f610f54707f9091db43.pack" />
+    <None Include=".git\objects\pack\pack-3432ddd199d59663a4db3f610f54707f9091db43.rev" />
+    <None Include=".git\packed-refs" />
+    <None Include=".git\refs\heads\main" />
+    <None Include=".git\refs\remotes\origin\HEAD" />
+    <None Include=".git\refs\remotes\origin\main" />
+    <None Include=".vs\Finance Manager\CopilotIndices\17.14.995.13737\CodeChunks.db" />
+    <None Include=".vs\Finance Manager\CopilotIndices\17.14.995.13737\SemanticSymbols.db" />
+    <None Include=".vs\Finance Manager\FileContentIndex\8e512d28-4c3c-47ca-93c7-7a1492044351.vsidx" />
+    <None Include=".vs\Finance Manager\v17\.suo" />
+    <None Include=".vs\Finance-Manager\copilot-chat\6bc6f4aa\sessions\132a2972-4a27-4507-829e-4a1b05ff992b" />
+    <None Include=".vs\Finance-Manager\copilot-chat\6bc6f4aa\sessions\28941048-83a8-47bf-b699-baf0fda74671" />
+    <None Include=".vs\Finance-Manager\copilot-chat\6bc6f4aa\sessions\2bddc9e5-4b0b-46f2-b993-a8e0786b00c0" />
+    <None Include=".vs\Finance-Manager\copilot-chat\6bc6f4aa\sessions\3c3ca77c-9cf4-4faa-b84c-d6bbb55d7fe6" />
+    <None Include=".vs\Finance-Manager\copilot-chat\6bc6f4aa\sessions\3e6b3be3-8da1-4c4d-899c-fbfb33f2e633" />
+    <None Include=".vs\Finance-Manager\copilot-chat\6bc6f4aa\sessions\9fcba11a-5160-44b4-85b0-5bb44d2e0e9f" />
+    <None Include=".vs\Finance-Manager\copilot-chat\6bc6f4aa\sessions\ad569a2d-5397-4567-ba22-20f905270aad" />
+    <None Include=".vs\Finance-Manager\copilot-chat\6bc6f4aa\sessions\d6712c66-78e6-4327-9623-6dd4a70c3fdd" />
+    <None Include=".vs\Finance-Manager\copilot-chat\6bc6f4aa\sessions\dac81eda-80e2-40ce-a1d0-f474668227bb" />
+    <None Include=".vs\Finance-Manager\CopilotIndices\17.14.995.13737\CodeChunks.db" />
+    <None Include=".vs\Finance-Manager\CopilotIndices\17.14.995.13737\SemanticSymbols.db" />
+    <None Include=".vs\Finance-Manager\FileContentIndex\f486b48e-8f2c-4cd7-9273-138f0b08945f.vsidx" />
+    <None Include=".vs\Finance-Manager\v17\.wsuo" />
+    <None Include=".vs\Finance-Manager\v17\DocumentLayout.backup.json" />
+    <None Include=".vs\Finance-Manager\v17\DocumentLayout.json" />
+    <None Include=".vs\FM\CopilotIndices\17.14.995.13737\CodeChunks.db" />
+    <None Include=".vs\FM\CopilotIndices\17.14.995.13737\CodeChunks.db-shm" />
+    <None Include=".vs\FM\CopilotIndices\17.14.995.13737\CodeChunks.db-wal" />
+    <None Include=".vs\FM\CopilotIndices\17.14.995.13737\SemanticSymbols.db" />
+    <None Include=".vs\FM\CopilotIndices\17.14.995.13737\SemanticSymbols.db-shm" />
+    <None Include=".vs\FM\CopilotIndices\17.14.995.13737\SemanticSymbols.db-wal" />
+    <None Include=".vs\ProjectSettings.json" />
+    <None Include=".vs\slnx.sqlite" />
+    <None Include=".vs\VSWorkspaceState.json" />
+    <None Include="app.config" />
+    <None Include="FM\bin\Debug\net9.0-windows\FM.deps.json" />
+    <None Include="FM\bin\Debug\net9.0-windows\FM.runtimeconfig.json" />
+    <None Include="FM\FM.csproj" />
+    <None Include="FM\obj\Debug\net9.0-windows\FM.AssemblyInfoInputs.cache" />
+    <None Include="FM\obj\Debug\net9.0-windows\FM.assets.cache" />
+    <None Include="FM\obj\Debug\net9.0-windows\FM.csproj.BuildWithSkipAnalyzers" />
+    <None Include="FM\obj\Debug\net9.0-windows\FM.csproj.CoreCompileInputs.cache" />
+    <None Include="FM\obj\Debug\net9.0-windows\FM.csproj.GenerateResource.cache" />
+    <None Include="FM\obj\Debug\net9.0-windows\FM.designer.deps.json" />
+    <None Include="FM\obj\Debug\net9.0-windows\FM.designer.runtimeconfig.json" />
+    <None Include="FM\obj\Debug\net9.0-windows\FM.GeneratedMSBuildEditorConfig.editorconfig" />
+    <None Include="FM\obj\Debug\net9.0-windows\FM.genruntimeconfig.cache" />
+    <None Include="FM\obj\Debug\net9.0-windows\FM.sourcelink.json" />
+    <None Include="FM\obj\FM.csproj.nuget.dgspec.json" />
+    <None Include="FM\obj\FM.csproj.nuget.g.props" />
+    <None Include="FM\obj\FM.csproj.nuget.g.targets" />
+    <None Include="FM\obj\project.assets.json" />
+    <None Include="FM\obj\project.nuget.cache" />
+    <None Include="FM\obj\Release\net9.0-windows\FM.AssemblyInfoInputs.cache" />
+    <None Include="FM\obj\Release\net9.0-windows\FM.assets.cache" />
+    <None Include="FM\obj\Release\net9.0-windows\FM.GeneratedMSBuildEditorConfig.editorconfig" />
+    <None Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include=".gitignore.txt" />
+    <Content Include=".git\ms-persist.xml" />
+    <Content Include="FM\bin\Debug\net9.0-windows\FM.dll" />
+    <Content Include="FM\bin\Debug\net9.0-windows\FM.exe" />
+    <Content Include="FM\bin\Debug\net9.0-windows\FM.pdb" />
+    <Content Include="FM\FM.csproj.user" />
+    <Content Include="FM\images\FM_Background.png" />
+    <Content Include="FM\obj\Debug\net9.0-windows\apphost.exe" />
+    <Content Include="FM\obj\Debug\net9.0-windows\FM.csproj.FileListAbsolute.txt" />
+    <Content Include="FM\obj\Debug\net9.0-windows\FM.dll" />
+    <Content Include="FM\obj\Debug\net9.0-windows\FM.pdb" />
+    <Content Include="FM\obj\Debug\net9.0-windows\refint\FM.dll" />
+    <Content Include="FM\obj\Debug\net9.0-windows\ref\FM.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="FM\AddBill.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FM\AddBill.Designer.cs">
+      <DependentUpon>AddBill.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FM\AddExtraExpense.cs" />
+    <Compile Include="FM\AddInvestment.cs" />
+    <Compile Include="FM\AddInvestment.Designer.cs">
+      <DependentUpon>AddInvestment.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FM\AllPayments.cs" />
+    <Compile Include="FM\AllPayments.Designer.cs">
+      <DependentUpon>AllPayments.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FM\BillsRecord.cs" />
+    <Compile Include="FM\BillsRecord.Designer.cs">
+      <DependentUpon>BillsRecord.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FM\BillStore.cs" />
+    <Compile Include="FM\ExtraExpensesRecord.cs" />
+    <Compile Include="FM\ExtraExpenseStore.cs" />
+    <Compile Include="FM\InvestmentRecord.Designer.cs" />
+    <Compile Include="FM\InvestmentStore.cs" />
+    <Compile Include="FM\MainMenu.cs" />
+    <Compile Include="FM\MainMenu.Designer.cs">
+      <DependentUpon>MainMenu.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FM\Models\BillRecord.cs" />
+    <Compile Include="FM\Models\ExtraExpenseRecord.cs" />
+    <Compile Include="FM\Models\InvestmentRecord.cs" />
+    <Compile Include="FM\obj\Debug\net9.0-windows\.NETCoreApp,Version=v9.0.AssemblyAttributes.cs" />
+    <Compile Include="FM\obj\Debug\net9.0-windows\FM.AssemblyInfo.cs" />
+    <Compile Include="FM\obj\Debug\net9.0-windows\FM.GlobalUsings.g.cs" />
+    <Compile Include="FM\obj\Release\net9.0-windows\.NETCoreApp,Version=v9.0.AssemblyAttributes.cs" />
+    <Compile Include="FM\obj\Release\net9.0-windows\FM.AssemblyInfo.cs" />
+    <Compile Include="FM\obj\Release\net9.0-windows\FM.GlobalUsings.g.cs" />
+    <Compile Include="FM\Program.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="FM\AddBill.resx">
+      <DependentUpon>AddBill.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FM\AddInvestment.resx">
+      <DependentUpon>AddInvestment.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FM\AllPayments.resx">
+      <DependentUpon>AllPayments.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FM\BillsRecord.resx">
+      <DependentUpon>BillsRecord.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FM\BillStore.resx">
+      <DependentUpon>BillStore.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FM\InvestmentRecord.resx" />
+    <EmbeddedResource Include="FM\InvestmentStore.resx">
+      <DependentUpon>InvestmentStore.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FM\MainMenu.resx">
+      <DependentUpon>MainMenu.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FM\obj\Debug\net9.0-windows\FM.AddBill.resources" />
+    <EmbeddedResource Include="FM\obj\Debug\net9.0-windows\FM.AddInvestment.resources" />
+    <EmbeddedResource Include="FM\obj\Debug\net9.0-windows\FM.AllPayments.resources" />
+    <EmbeddedResource Include="FM\obj\Debug\net9.0-windows\FM.BillsRecord.resources" />
+    <EmbeddedResource Include="FM\obj\Debug\net9.0-windows\FM.BillStore.resources" />
+    <EmbeddedResource Include="FM\obj\Debug\net9.0-windows\FM.InvestmentRecord.resources" />
+    <EmbeddedResource Include="FM\obj\Debug\net9.0-windows\FM.InvestmentStore.resources" />
+    <EmbeddedResource Include="FM\obj\Debug\net9.0-windows\FM.MainMenu.resources" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include=".git\objects\info\" />
+    <Folder Include=".git\refs\tags\" />
+    <Folder Include=".vs\FM\v17\" />
+    <Folder Include="FM\bin\Release\net9.0-windows\" />
+    <Folder Include="FM\obj\Release\net9.0-windows\refint\" />
+    <Folder Include="FM\obj\Release\net9.0-windows\ref\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSHARP.Targets" />
+  <ProjectExtensions>
+    <VisualStudio AllowExistingFolder="true" />
+  </ProjectExtensions>
+</Project>
