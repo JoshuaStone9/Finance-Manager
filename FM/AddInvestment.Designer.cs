@@ -35,7 +35,7 @@ namespace FM
 
             // Inputs
             txtName = new TextBox();
-            numAmount = new NumericUpDown();
+            txtAmount = new TextBox();
             dtDate = new DateTimePicker();
             cbCategory = new ComboBox();
             cbLength = new ComboBox();
@@ -47,7 +47,7 @@ namespace FM
             btnViewBills = new Button();
             btnViewAllPayments = new Button();
 
-            ((System.ComponentModel.ISupportInitialize)numAmount).BeginInit();
+     
             SuspendLayout();
 
             // --- Label: Name ---
@@ -71,14 +71,11 @@ namespace FM
             lblAmount.Text = "Amount:";
 
             // --- NumericUpDown: Amount ---
-            numAmount.Location = new Point(120, 61);
-            numAmount.Name = "numAmount";
-            numAmount.Size = new Size(120, 23);
-            numAmount.DecimalPlaces = 2;
-            numAmount.Maximum = 1000000000;
-            numAmount.Minimum = 0;
-            numAmount.ThousandsSeparator = true;
-            numAmount.TabIndex = 1;
+            txtAmount.AutoSize = true;
+            txtAmount.Location = new Point(44, 64);
+            txtAmount.Name = "txtAmount";
+            txtAmount.Size = new Size(56, 15);
+            txtAmount.TabIndex = 1;
 
             // --- Label: Date ---
             lblDate.AutoSize = true;
@@ -200,7 +197,7 @@ namespace FM
             Controls.Add(lblName);
             Controls.Add(txtName);
             Controls.Add(lblAmount);
-            Controls.Add(numAmount);
+            Controls.Add(txtAmount);
             Controls.Add(lblDate);
             Controls.Add(dtDate);
             Controls.Add(lblCategory);
@@ -218,7 +215,6 @@ namespace FM
             Name = "AddInvestment";
             Text = "Add Investment";
 
-            ((System.ComponentModel.ISupportInitialize)numAmount).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -248,7 +244,7 @@ namespace FM
         private Label lblOtherInvestment;
 
         private TextBox txtName;
-        private NumericUpDown numAmount;
+        private TextBox txtAmount;
         private DateTimePicker dtDate;
         private ComboBox cbCategory;
         public ComboBox cbLength; // public if other code references it like your Bill form

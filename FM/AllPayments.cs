@@ -160,7 +160,11 @@ namespace FM
         {
             decimal total =
                 BillStore.Bills.Sum(b => b.Amount) +
-                InvestmentStore.Investments.Sum(i => i.Amount) +
+                InvestmentStore.Investments.Sum(i =>
+                {
+                    decimal val;
+                    return decimal.TryParse(i.Amount, out val) ? val : 0m;
+                }) +
                 ExtraExpenseStore.Expenses.Sum(e => e.Amount);
 
             txtGrandTotal.Text = total.ToString("C", CultureInfo.CurrentCulture);
