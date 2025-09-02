@@ -34,6 +34,7 @@ namespace FM
             lblOtherInvestment = new Label();
 
             // Inputs
+            txtInvestment_ID = new TextBox();
             txtName = new TextBox();
             txtAmount = new TextBox();
             dtDate = new DateTimePicker();
@@ -242,7 +243,7 @@ namespace FM
         private Label lblLength;
         private Label lblNotes;
         private Label lblOtherInvestment;
-
+        private TextBox txtInvestment_ID;
         private TextBox txtName;
         private TextBox txtAmount;
         private DateTimePicker dtDate;
