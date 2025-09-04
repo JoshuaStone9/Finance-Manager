@@ -69,6 +69,7 @@ namespace FM
             savingsButton.Size = new Size(200, 40);
             savingsButton.Location = new Point(100, 220);
             savingsButton.Visible = false;
+            savingsButton.Click += SavingsButton_Click;
 
             // Investments Button
             investmentsButton = new Button();
@@ -124,6 +125,12 @@ namespace FM
         {
             AddInvestment investForm = new AddInvestment();
             investForm.Show();
+        }
+
+        private void SavingsButton_Click(object sender, EventArgs e)
+        {
+            AddSavings savingsForm = new AddSavings();
+            savingsForm.Show();
         }
 
         private void ExtraExpenseButton_Click(object sender, EventArgs e)
