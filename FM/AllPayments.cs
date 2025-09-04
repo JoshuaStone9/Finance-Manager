@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Npgsql;
+using System;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
@@ -8,6 +9,9 @@ namespace FM
 {
     public partial class AllPayments : Form
     {
+        string connectionString =
+   "Host=localhost;Database=Finance_Manager;Username=postgres;Password=banana001;SslMode=Disable";
+
         private readonly BindingSource _bsBills = new();
         private readonly BindingSource _bsInv = new();
         private readonly BindingSource _bsExtExp = new();
@@ -22,6 +26,7 @@ namespace FM
 
         public AllPayments()
         {
+            InitializeComponent();
             Text = "All Payments";
             ClientSize = new Size(1200, 820); // a bit wider for comfort
 
@@ -40,134 +45,175 @@ namespace FM
             gridBills.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             Controls.Add(gridBills);
 
-            // Investments grid
-            gridInvestments.Location = new Point(16, 300);
-            gridInvestments.Size = new Size(1168, 200);
-            gridInvestments.AllowUserToAddRows = false;
-            gridInvestments.AllowUserToDeleteRows = false;
-            gridInvestments.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            gridInvestments.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            Controls.Add(gridInvestments);
+            Load += AllPayments_Load;
+            gridBills.DataSource = _bsBills;
 
-            // Expenses grid (moved up so bottom panel is visible)
-            gridExpenses.Location = new Point(16, 520);
-            gridExpenses.Size = new Size(1168, 180);
-            gridExpenses.AllowUserToAddRows = false;
-            gridExpenses.AllowUserToDeleteRows = false;
-            gridExpenses.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            gridExpenses.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            Controls.Add(gridExpenses);
-
-            // Bottom panel for Total
-            bottomPanel = new Panel
-            {
-                Dock = DockStyle.Bottom,
-                Height = 80,
-                Padding = new Padding(12)
-            };
-
-            // Right-aligned layout for total
-            var totalLayout = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Right,
-                FlowDirection = FlowDirection.RightToLeft,
-                AutoSize = true,
-                WrapContents = false,
-                Padding = new Padding(0, 10, 0, 0),
-                Margin = new Padding(0)
-            };
-
-            txtGrandTotal = new TextBox
-            {
-                ReadOnly = true,
-                Width = 180,
-                TextAlign = HorizontalAlignment.Right,
-                Font = new Font("Segoe UI", 11F),
-                Margin = new Padding(8, 0, 0, 0)
-            };
-
-            lblGrandTotal = new Label
-            {
-                Text = "Total:",
-                AutoSize = true,
-                Font = new Font("Segoe UI", 11F),
-                TextAlign = ContentAlignment.MiddleLeft,
-                Padding = new Padding(0, 4, 0, 0),
-                Margin = new Padding(0, 0, 8, 0)
-            };
-
-            totalLayout.Controls.Add(txtGrandTotal);
-            totalLayout.Controls.Add(lblGrandTotal);
-
-            bottomPanel.Controls.Add(totalLayout);
-            Controls.Add(bottomPanel);
-
-            // Bind grids
+        }
+        private void AllPayments_Load(object sender, EventArgs e)
+        {
             BillsDataGrid();
-            InvestmentsDataGrid();
-            ExtraExpenseDataGrid();
-
-            // Keep total updated whenever lists change
-            BillStore.Bills.ListChanged += (_, __) => UpdateTotal();
-            InvestmentStore.Investments.ListChanged += (_, __) => UpdateTotal();
-            _bsExtExp.ListChanged += (_, __) => UpdateTotal();
-
-            // Initial total
-            UpdateTotal();
+            //InvestmentsDataGrid();
+            //ExtraExpenseDataGrid();
+            //// Keep total updated whenever lists change
+            //BillStore.Bills.ListChanged += (_, __) => UpdateTotal();
+            //InvestmentStore.Investments.ListChanged += (_, __) => UpdateTotal();
+            //_bsExtExp.ListChanged += (_, __) => UpdateTotal();
+            //// Initial total
+            //UpdateTotal();
         }
 
         private void BillsDataGrid()
         {
-            _bsBills.DataSource = BillStore.Bills;
-            gridBills.AutoGenerateColumns = true;
-            gridBills.DataSource = _bsBills;
-
-            // Apply £ formatting AFTER binding
-            if (gridBills.Columns["Amount"] != null)
+            using (var con = new NpgsqlConnection(connectionString))
             {
-                gridBills.Columns["Amount"].DefaultCellStyle.Format = "C";
-                gridBills.Columns["Amount"].DefaultCellStyle.FormatProvider = new CultureInfo("en-GB");
-            }
-        }
-
-        private void InvestmentsDataGrid()
-        {
-            _bsInv.DataSource = InvestmentStore.Investments;
-            gridInvestments.AutoGenerateColumns = true;
-            gridInvestments.DataSource = _bsInv;
-
-            if (gridInvestments.Columns["Amount"] != null)
-            {
-                gridInvestments.Columns["Amount"].DefaultCellStyle.Format = "C";
-                gridInvestments.Columns["Amount"].DefaultCellStyle.FormatProvider = new CultureInfo("en-GB");
-            }
-        }
-
-
-        private void ExtraExpenseDataGrid()
-        {
-            _bsExtExp.DataSource = ExtraExpenseStore.Expenses;
-            gridExpenses.AutoGenerateColumns = true;
-            gridExpenses.DataSource = _bsExtExp;
-
-            if (gridExpenses.Columns["Amount"] != null)
-            {
-                gridExpenses.Columns["Amount"].DefaultCellStyle.Format = "C";
-                gridExpenses.Columns["Amount"].DefaultCellStyle.FormatProvider = new CultureInfo("en-GB");
-            }
-        }
-        private void UpdateTotal()
-        {
-            decimal total =
-                BillStore.Bills.Sum(b => b.Amount) +
-                InvestmentStore.Investments.Sum(i =>
+                try
                 {
-                    decimal val;
-                    return decimal.TryParse(i.Amount, out val) ? val : 0m;
-                }) +
-                ExtraExpenseStore.Expenses.Sum(e => e.Amount);
+                    con.Open();
+                    string query = "SELECT * FROM bills"; // Replace with your table name
+                    var da = new NpgsqlDataAdapter(query, con);
+                    var bdt = new System.Data.DataTable();
+                    da.Fill(bdt);
 
-            txtGrandTotal.Text = total.ToString("C", CultureInfo.CurrentCulture);
+                    gridBills.DataSource = bdt; // Bind data to DataGridView
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error: " + ex.Message);
+                }
+            }
         }
     }
 }
+
+
+//            // Investments grid
+//            gridInvestments.Location = new Point(16, 300);
+//            gridInvestments.Size = new Size(1168, 200);
+//            gridInvestments.AllowUserToAddRows = false;
+//            gridInvestments.AllowUserToDeleteRows = false;
+//            gridInvestments.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+//            gridInvestments.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+//            Controls.Add(gridInvestments);
+
+//            // Expenses grid (moved up so bottom panel is visible)
+//            gridExpenses.Location = new Point(16, 520);
+//            gridExpenses.Size = new Size(1168, 180);
+//            gridExpenses.AllowUserToAddRows = false;
+//            gridExpenses.AllowUserToDeleteRows = false;
+//            gridExpenses.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+//            gridExpenses.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+//            Controls.Add(gridExpenses);
+
+//            // Bottom panel for Total
+//            bottomPanel = new Panel
+//            {
+//                Dock = DockStyle.Bottom,
+//                Height = 80,
+//                Padding = new Padding(12)
+//            };
+
+//            // Right-aligned layout for total
+//            var totalLayout = new FlowLayoutPanel
+//            {
+//                Dock = DockStyle.Right,
+//                FlowDirection = FlowDirection.RightToLeft,
+//                AutoSize = true,
+//                WrapContents = false,
+//                Padding = new Padding(0, 10, 0, 0),
+//                Margin = new Padding(0)
+//            };
+
+//            txtGrandTotal = new TextBox
+//            {
+//                ReadOnly = true,
+//                Width = 180,
+//                TextAlign = HorizontalAlignment.Right,
+//                Font = new Font("Segoe UI", 11F),
+//                Margin = new Padding(8, 0, 0, 0)
+//            };
+
+//            lblGrandTotal = new Label
+//            {
+//                Text = "Total:",
+//                AutoSize = true,
+//                Font = new Font("Segoe UI", 11F),
+//                TextAlign = ContentAlignment.MiddleLeft,
+//                Padding = new Padding(0, 4, 0, 0),
+//                Margin = new Padding(0, 0, 8, 0)
+//            };
+
+//            totalLayout.Controls.Add(txtGrandTotal);
+//            totalLayout.Controls.Add(lblGrandTotal);
+
+//            bottomPanel.Controls.Add(totalLayout);
+//            Controls.Add(bottomPanel);
+
+//            // Bind grids
+//            BillsDataGrid();
+//            InvestmentsDataGrid();
+//            ExtraExpenseDataGrid();
+
+//            // Keep total updated whenever lists change
+//            BillStore.Bills.ListChanged += (_, __) => UpdateTotal();
+//            InvestmentStore.Investments.ListChanged += (_, __) => UpdateTotal();
+//            _bsExtExp.ListChanged += (_, __) => UpdateTotal();
+
+//            // Initial total
+//            UpdateTotal();
+//        }
+
+//        private void BillsDataGrid()
+//        {
+//            _bsBills.DataSource = BillStore.Bills;
+//            gridBills.AutoGenerateColumns = true;
+//            gridBills.DataSource = _bsBills;
+
+//            // Apply £ formatting AFTER binding
+//            if (gridBills.Columns["Amount"] != null)
+//            {
+//                gridBills.Columns["Amount"].DefaultCellStyle.Format = "C";
+//                gridBills.Columns["Amount"].DefaultCellStyle.FormatProvider = new CultureInfo("en-GB");
+//            }
+//        }
+
+//        private void InvestmentsDataGrid()
+//        {
+//            _bsInv.DataSource = InvestmentStore.Investments;
+//            gridInvestments.AutoGenerateColumns = true;
+//            gridInvestments.DataSource = _bsInv;
+
+//            if (gridInvestments.Columns["Amount"] != null)
+//            {
+//                gridInvestments.Columns["Amount"].DefaultCellStyle.Format = "C";
+//                gridInvestments.Columns["Amount"].DefaultCellStyle.FormatProvider = new CultureInfo("en-GB");
+//            }
+//        }
+
+
+//        private void ExtraExpenseDataGrid()
+//        {
+//            _bsExtExp.DataSource = ExtraExpenseStore.Expenses;
+//            gridExpenses.AutoGenerateColumns = true;
+//            gridExpenses.DataSource = _bsExtExp;
+
+//            if (gridExpenses.Columns["Amount"] != null)
+//            {
+//                gridExpenses.Columns["Amount"].DefaultCellStyle.Format = "C";
+//                gridExpenses.Columns["Amount"].DefaultCellStyle.FormatProvider = new CultureInfo("en-GB");
+//            }
+//        }
+//        private void UpdateTotal()
+//        {
+//            decimal total =
+//                BillStore.Bills.Sum(b => b.Amount) +
+//                InvestmentStore.Investments.Sum(i =>
+//                {
+//                    decimal val;
+//                    return decimal.TryParse(i.Amount, out val) ? val : 0m;
+//                }) +
+//                ExtraExpenseStore.Expenses.Sum(e => e.Amount);
+
+//            txtGrandTotal.Text = total.ToString("C", CultureInfo.CurrentCulture);
+//        }
+//    }
+//}
