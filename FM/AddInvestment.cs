@@ -232,6 +232,7 @@ RETURNING investments_id;", conn);
             cmd.Parameters.Add("@notes", NpgsqlDbType.Text).Value = (object?)rec.Description ?? DBNull.Value;
 
             var newIdObj = cmd.ExecuteScalar();
+            int newId = Convert.ToInt32(newIdObj);
             if (newIdObj != null && newIdObj != DBNull.Value)
                 rec.Investment_ID = Convert.ToString(newIdObj, CultureInfo.InvariantCulture) ?? string.Empty;
         }
