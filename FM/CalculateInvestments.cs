@@ -2,6 +2,7 @@
 using System;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
@@ -32,97 +33,209 @@ namespace FM
         private Label lblDecember; private TextBox txtDecember;
 
         private Label lblInvestmentsList;
+        private Label lblTitle;
+        private PictureBox logo;
 
         public CalculateInvestments()
         {
             InitializeComponent();
+            RestyleForm();     // <- NEW styling like the rest of your app
             BuildUi();
             WireMonthClicks();
         }
 
-        private void BuildUi()
+        private void RestyleForm()
         {
             Text = "Calculate Investments";
-            ClientSize = new Size(800, 720);
+            ClientSize = new Size(900, 780); // a bit wider/taller for breathing room
             StartPosition = FormStartPosition.CenterScreen;
+            DoubleBuffered = true;
+            Font = new Font("Montserrat", 10, FontStyle.Regular);
+            Paint += CalculateInvestments_Paint; // gradient background
+        }
 
-            btnRetrieveInvestments = new Button
+        private Button MakePrimaryButton(string text, Point location, Size size, EventHandler onClick)
+        {
+            var b = new Button
             {
-                Text = "Retrieve Investments",
-                Location = new Point(20, 20),
-                Size = new Size(180, 30)
+                Text = text,
+                Location = location,
+                Size = size,
+                BackColor = Color.FromArgb(255, 120, 120),
+                FlatStyle = FlatStyle.Flat
             };
-            btnRetrieveInvestments.Click += RetrieveInvestments;
+            b.FlatAppearance.BorderColor = Color.Black;
+            b.FlatAppearance.BorderSize = 2;
+            b.Click += onClick;
+            return b;
+        }
+
+        private Button MakeSecondaryButton(string text, Point location, Size size, EventHandler onClick)
+        {
+            var b = new Button
+            {
+                Text = text,
+                Location = location,
+                Size = size,
+                BackColor = Color.FromArgb(255, 150, 150),
+                FlatStyle = FlatStyle.Flat
+            };
+            b.FlatAppearance.BorderColor = Color.Black;
+            b.FlatAppearance.BorderSize = 2;
+            b.Click += onClick;
+            return b;
+        }
+
+        private Label MakeTransparentLabel(string text, Point location)
+        {
+            return new Label
+            {
+                Text = text,
+                Location = location,
+                AutoSize = true,
+                BackColor = Color.Transparent
+            };
+        }
+
+        private TextBox MakeReadOnlyAmountBox(Point location)
+        {
+            return new TextBox
+            {
+                Location = location,
+                Width = 110,
+                ReadOnly = true,
+                TextAlign = HorizontalAlignment.Right
+            };
+        }
+
+        private void BuildUi()
+        {
+            Controls.Clear();
+
+            // Optional logo + title to match your other forms
+            logo = new PictureBox
+            {
+                Image = Image.FromFile("images/FM_Logo_Main_Menu.png"),
+                SizeMode = PictureBoxSizeMode.StretchImage,
+                Size = new Size(120, 120),
+                Location = new Point((ClientSize.Width - 120) / 2, 0),
+                BackColor = Color.Transparent
+            };
+            Controls.Add(logo);
+
+            lblTitle = new Label
+            {
+                Text = "Calculate Investments",
+                Font = new Font("Montserrat", 14, FontStyle.Bold),
+                AutoSize = true,
+                BackColor = Color.Transparent,
+                Location = new Point((ClientSize.Width - 260) / 2, 120)
+            };
+            Controls.Add(lblTitle);
+
+            // Top controls
+            btnRetrieveInvestments = MakePrimaryButton(
+                "Retrieve Investments",
+                new Point(20, 160),
+                new Size(200, 40),
+                RetrieveInvestments
+            );
+            Controls.Add(btnRetrieveInvestments);
+
+            var lblTotal = MakeTransparentLabel("Grand Total:", new Point(240, 170));
+            Controls.Add(lblTotal);
 
             txtTotal = new TextBox
             {
-                Location = new Point(220, 20),
+                Location = new Point(340, 166),
                 Width = 140,
-                ReadOnly = true
+                ReadOnly = true,
+                TextAlign = HorizontalAlignment.Right
             };
+            Controls.Add(txtTotal);
 
             // Month labels/textboxes (two rows)
-            lblJanuary = new Label { Text = "January", Location = new Point(20, 60), AutoSize = true };
-            txtJanuary = new TextBox { Location = new Point(100, 60), Width = 100, ReadOnly = true };
-            lblFebruary = new Label { Text = "February", Location = new Point(220, 60), AutoSize = true };
-            txtFebruary = new TextBox { Location = new Point(300, 60), Width = 100, ReadOnly = true };
-            lblMarch = new Label { Text = "March", Location = new Point(420, 60), AutoSize = true };
-            txtMarch = new TextBox { Location = new Point(500, 60), Width = 100, ReadOnly = true };
-            lblApril = new Label { Text = "April", Location = new Point(620, 60), AutoSize = true };
-            txtApril = new TextBox { Location = new Point(680, 60), Width = 100, ReadOnly = true };
+            int left0 = 20, left1 = 240, left2 = 460, left3 = 680;
+            int y1 = 210, y2 = 250, y3 = 290; // 3 rows of 4 months each for better spacing
 
-            lblMay = new Label { Text = "May", Location = new Point(20, 100), AutoSize = true };
-            txtMay = new TextBox { Location = new Point(100, 100), Width = 100, ReadOnly = true };
-            lblJune = new Label { Text = "June", Location = new Point(220, 100), AutoSize = true };
-            txtJune = new TextBox { Location = new Point(300, 100), Width = 100, ReadOnly = true };
-            lblJuly = new Label { Text = "July", Location = new Point(420, 100), AutoSize = true };
-            txtJuly = new TextBox { Location = new Point(500, 100), Width = 100, ReadOnly = true };
-            lblAugust = new Label { Text = "August", Location = new Point(620, 100), AutoSize = true };
-            txtAugust = new TextBox { Location = new Point(680, 100), Width = 100, ReadOnly = true };
+            // Row 1
+            lblJanuary = MakeTransparentLabel("January", new Point(left0, y1));
+            txtJanuary = MakeReadOnlyAmountBox(new Point(left0, y2));
+            lblFebruary = MakeTransparentLabel("February", new Point(left1, y1));
+            txtFebruary = MakeReadOnlyAmountBox(new Point(left1, y2));
+            lblMarch = MakeTransparentLabel("March", new Point(left2, y1));
+            txtMarch = MakeReadOnlyAmountBox(new Point(left2, y2));
+            lblApril = MakeTransparentLabel("April", new Point(left3, y1));
+            txtApril = MakeReadOnlyAmountBox(new Point(left3, y2));
 
-            lblSeptember = new Label { Text = "September", Location = new Point(20, 140), AutoSize = true };
-            txtSeptember = new TextBox { Location = new Point(100, 140), Width = 100, ReadOnly = true };
-            lblOctober = new Label { Text = "October", Location = new Point(220, 140), AutoSize = true };
-            txtOctober = new TextBox { Location = new Point(300, 140), Width = 100, ReadOnly = true };
-            lblNovember = new Label { Text = "November", Location = new Point(420, 140), AutoSize = true };
-            txtNovember = new TextBox { Location = new Point(500, 140), Width = 100, ReadOnly = true };
-            lblDecember = new Label { Text = "December", Location = new Point(620, 140), AutoSize = true };
-            txtDecember = new TextBox { Location = new Point(700, 140), Width = 100, ReadOnly = true };
+            // Row 2
+            lblMay = MakeTransparentLabel("May", new Point(left0, y3));
+            txtMay = MakeReadOnlyAmountBox(new Point(left0, y3 + 40));
+            lblJune = MakeTransparentLabel("June", new Point(left1, y3));
+            txtJune = MakeReadOnlyAmountBox(new Point(left1, y3 + 40));
+            lblJuly = MakeTransparentLabel("July", new Point(left2, y3));
+            txtJuly = MakeReadOnlyAmountBox(new Point(left2, y3 + 40));
+            lblAugust = MakeTransparentLabel("August", new Point(left3, y3));
+            txtAugust = MakeReadOnlyAmountBox(new Point(left3, y3 + 40));
 
+            // Row 3
+            int y4 = y3 + 80;
+            lblSeptember = MakeTransparentLabel("September", new Point(left0, y4));
+            txtSeptember = MakeReadOnlyAmountBox(new Point(left0, y4 + 40));
+            lblOctober = MakeTransparentLabel("October", new Point(left1, y4));
+            txtOctober = MakeReadOnlyAmountBox(new Point(left1, y4 + 40));
+            lblNovember = MakeTransparentLabel("November", new Point(left2, y4));
+            txtNovember = MakeReadOnlyAmountBox(new Point(left2, y4 + 40));
+            lblDecember = MakeTransparentLabel("December", new Point(left3, y4));
+            txtDecember = MakeReadOnlyAmountBox(new Point(left3, y4 + 40));
+
+            Controls.AddRange(new Control[]
+            {
+                lblJanuary, txtJanuary, lblFebruary, txtFebruary, lblMarch, txtMarch, lblApril, txtApril,
+                lblMay, txtMay, lblJune, txtJune, lblJuly, txtJuly, lblAugust, txtAugust,
+                lblSeptember, txtSeptember, lblOctober, txtOctober, lblNovember, txtNovember, lblDecember, txtDecember
+            });
+
+            // Grid
             dgvInvestments = new DataGridView
             {
                 AutoGenerateColumns = true,
-                Location = new Point(20, 190),
-                Size = new Size(760, 360),
+                Location = new Point(20, y4 + 100),
+                Size = new Size(ClientSize.Width - 40, 280),
                 ReadOnly = true,
                 MultiSelect = false,
                 AllowUserToAddRows = false,
                 AllowUserToDeleteRows = false,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 RowHeadersVisible = false,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells,
+                BackgroundColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle,
+                EnableHeadersVisualStyles = false
             };
+
+            // Light styling on the grid for readability
+            dgvInvestments.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(255, 150, 150);
+            dgvInvestments.ColumnHeadersDefaultCellStyle.ForeColor = Color.Black;
+            dgvInvestments.ColumnHeadersDefaultCellStyle.Font = new Font(Font, FontStyle.Bold);
+
             dgvInvestments.DataBindingComplete += (s, e) => UpdateMonthlyAndList(); // fill totals + list current month
             dgvInvestments.CellValueChanged += (s, e) => UpdateMonthlyAndList();
             dgvInvestments.RowsRemoved += (s, e) => UpdateMonthlyAndList();
 
+            Controls.Add(dgvInvestments);
+
             // Big multi-line label for listing investments of a month
             lblInvestmentsList = new Label
             {
-                Location = new Point(20, 560),
-                Size = new Size(760, 130),
+                Location = new Point(20, dgvInvestments.Bottom + 10),
+                Size = new Size(ClientSize.Width - 40, 120),
                 AutoSize = false,
-                BorderStyle = BorderStyle.FixedSingle
+                BorderStyle = BorderStyle.FixedSingle,
+                BackColor = Color.FromArgb(255, 255, 255, 220), // subtle white overlay
+                Padding = new Padding(8)
             };
-
-            Controls.AddRange(new Control[]
-            {
-                btnRetrieveInvestments, txtTotal,
-                lblJanuary, txtJanuary, lblFebruary, txtFebruary, lblMarch, txtMarch, lblApril, txtApril,
-                lblMay, txtMay, lblJune, txtJune, lblJuly, txtJuly, lblAugust, txtAugust,
-                lblSeptember, txtSeptember, lblOctober, txtOctober, lblNovember, txtNovember, lblDecember, txtDecember,
-                dgvInvestments, lblInvestmentsList
-            });
+            Controls.Add(lblInvestmentsList);
         }
 
         private void WireMonthClicks()
@@ -140,6 +253,15 @@ namespace FM
             txtNovember.Click += (s, e) => UpdateMonthlyAndList(null, 11);
             txtDecember.Click += (s, e) => UpdateMonthlyAndList(null, 12);
         }
+
+        // Gradient background (LightCoral -> White)
+        private void CalculateInvestments_Paint(object? sender, PaintEventArgs e)
+        {
+            using var brush = new LinearGradientBrush(ClientRectangle, Color.LightCoral, Color.White, LinearGradientMode.Vertical);
+            e.Graphics.FillRectangle(brush, ClientRectangle);
+        }
+
+        // ----- Your existing data/logic below (unchanged) -----
 
         private void RetrieveInvestments(object? sender, EventArgs e)
         {
@@ -169,11 +291,9 @@ namespace FM
             if (dgvInvestments.Columns.Contains("date"))
                 dgvInvestments.Columns["date"].DefaultCellStyle.Format = "d";
 
-            // Fill totals and list CURRENT month after loading
             UpdateMonthlyAndList(null, DateTime.Today.Month);
         }
 
-        // Helper that fills monthly totals and (optionally) lists a specific month
         private void UpdateMonthlyAndList(int? year = null, int? monthToList = null)
         {
             UpdateMonthlyTotals(year, out var totals);
@@ -181,7 +301,6 @@ namespace FM
             UpdateLabelList(monthToList ?? DateTime.Today.Month, year ?? DateTime.Today.Year);
         }
 
-        // 1) Compute month totals for a given year
         private void UpdateMonthlyTotals(int? year, out decimal[] totals)
         {
             int targetYear = year ?? DateTime.Today.Year;
@@ -213,11 +332,9 @@ namespace FM
                     }
                 }
             }
-            // update grand total textbox
             txtTotal.Text = totals.Sum().ToString("N2");
         }
 
-        // 2) Write totals into the 12 month textboxes
         private void WriteTotalsToTextboxes(decimal[] totals)
         {
             txtJanuary.Text = totals[1].ToString("N2");
@@ -234,7 +351,6 @@ namespace FM
             txtDecember.Text = totals[12].ToString("N2");
         }
 
-        // 3) Build the multi-line list for a month and show in label
         private void UpdateLabelList(int month, int year)
         {
             var lines = new System.Collections.Generic.List<string>();

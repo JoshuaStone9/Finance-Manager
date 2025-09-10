@@ -1,14 +1,10 @@
 ﻿using Npgsql;
 using NpgsqlTypes;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace FM
@@ -17,16 +13,15 @@ namespace FM
     {
         private Label lblTitle;
 
-
         private Label lblName;
         private TextBox txtName;
 
         private Label lblAmount;
         private Label lblPound;
-        private TextBox txtAmount;          
+        private TextBox txtAmount;
 
-        private Label lblLength;         
-        private ComboBox cboLength;      
+        private Label lblLength;
+        private ComboBox cboLength;
 
         private Label lblDate;
         private DateTimePicker dtpDate;
@@ -40,11 +35,11 @@ namespace FM
         private Button btnMainMenu;
 
         private Panel bottomPanel;
+        private PictureBox logo;
 
         private const string ConnStr =
             "Host=localhost;Database=Finance_Manager;Username=postgres;Password=banana001;SslMode=Disable";
 
-        // Helper class for binding
         private sealed class CategoryItem
         {
             public int Id { get; }
@@ -53,87 +48,93 @@ namespace FM
             public override string ToString() => Name;
         }
 
-       
         public AddSavings()
         {
-            InitializeComponent();
-
+            // ---- Form styling to match the app ----
             Text = "Add Savings";
-            ClientSize = new Size(560, 540);
+            ClientSize = new Size(560, 620);
             StartPosition = FormStartPosition.CenterScreen;
+            DoubleBuffered = true;
+            Font = new Font("Montserrat", 10, FontStyle.Regular);
+            Paint += AddSavings_Paint;
 
-            bottomPanel = new Panel { Dock = DockStyle.Bottom, Height = 100 };
+            SuspendLayout();
 
+            // (Optional) top-center logo
+            logo = new PictureBox
+            {
+                Image = Image.FromFile("images/FM_Logo_Main_Menu.png"),
+                SizeMode = PictureBoxSizeMode.StretchImage,
+                Size = new Size(120, 120),
+                Location = new Point((ClientSize.Width - 120) / 2, 0),
+                BackColor = Color.Transparent
+            };
+            Controls.Add(logo);
+
+            // Title
             lblTitle = new Label
             {
                 Text = "Add Savings",
-                Location = new Point(190, 12),
+                Location = new Point((ClientSize.Width - 160) / 2, 120),
                 AutoSize = true,
-                Font = new Font("Cambria", 14F, FontStyle.Regular)
+                Font = new Font("Montserrat", 14F, FontStyle.Bold),
+                BackColor = Color.Transparent
             };
-            
 
-            
-            lblName = new Label { Text = "Name", Location = new Point(20, 100), AutoSize = true, TabIndex = 2 };
-            txtName = new TextBox { Location = new Point(160, 96), Width = 330, TabIndex = 3 };
+            // Name
+            lblName = new Label { Text = "Name", Location = new Point(20, 160), AutoSize = true, BackColor = Color.Transparent, TabIndex = 0 };
+            txtName = new TextBox { Location = new Point(160, 156), Width = 330, TabIndex = 1 };
 
-            
-            lblAmount = new Label { Text = "Amount", Location = new Point(20, 140), AutoSize = true, TabIndex = 4 };
-            lblPound = new Label { Text = "£", Location = new Point(160, 140), AutoSize = true };
-            txtAmount = new TextBox { Location = new Point(175, 136), Width = 120, TabIndex = 5 };
+            // Amount
+            lblAmount = new Label { Text = "Amount", Location = new Point(20, 200), AutoSize = true, BackColor = Color.Transparent, TabIndex = 2 };
+            lblPound = new Label { Text = "£", Location = new Point(160, 200), AutoSize = true, BackColor = Color.Transparent };
+            txtAmount = new TextBox { Location = new Point(175, 196), Width = 120, TabIndex = 3 };
 
-
-            
-            lblLength = new Label
-            {
-                Text = "Length",
-                Location = new Point(20, 260),
-                AutoSize = true,
-                TabIndex = 10
-            };
+            // Length
+            lblLength = new Label { Text = "Length", Location = new Point(20, 240), AutoSize = true, BackColor = Color.Transparent, TabIndex = 4 };
             cboLength = new ComboBox
             {
-                Location = new Point(160, 256),
+                Location = new Point(160, 236),
                 Width = 160,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                TabIndex = 11
+                TabIndex = 5
             };
             cboLength.Items.AddRange(new object[] { "Daily", "Weekly", "Monthly", "Quarterly", "Yearly" });
 
-
-            lblDate = new Label { Text = "Date", Location = new Point(20, 300), AutoSize = true, TabIndex = 12 };
+            // Date
+            lblDate = new Label { Text = "Date", Location = new Point(20, 280), AutoSize = true, BackColor = Color.Transparent, TabIndex = 6 };
             dtpDate = new DateTimePicker
             {
-                Location = new Point(160, 296),
+                Location = new Point(160, 276),
                 Width = 200,
                 Format = DateTimePickerFormat.Short,
-                TabIndex = 13
+                TabIndex = 7
             };
 
-            
-            lblNotes = new Label { Text = "Notes", Location = new Point(20, 340), AutoSize = true, TabIndex = 14 };
+            // Notes
+            lblNotes = new Label { Text = "Notes", Location = new Point(20, 320), AutoSize = true, BackColor = Color.Transparent, TabIndex = 8 };
             txtNotes = new TextBox
             {
-                Location = new Point(160, 336),
+                Location = new Point(160, 316),
                 Width = 330,
-                Height = 110,
+                Height = 150,
                 Multiline = true,
                 ScrollBars = ScrollBars.Vertical,
-                TabIndex = 15
+                TabIndex = 9
             };
 
-            // Buttons
-            btnSave = new Button { Text = "Save", Location = new Point(160, 15), Width = 120, Height = 36, TabIndex = 16 };
-            btnSave.Click += BtnSave_Click;
+            // Bottom button panel (transparent to show gradient)
+            bottomPanel = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 120,
+                BackColor = Color.Transparent
+            };
 
-            btnViewSavings = new Button { Text = "View Expenses", Location = new Point(300, 15), Width = 200, Height = 36, TabIndex = 17 };
-            btnViewSavings.Click += BtnViewSavings_Click;
-
-            btnViewAllPayments = new Button { Text = "View All Payments", Location = new Point(300, 60), Width = 200, Height = 35, TabIndex = 18 };
-            btnViewAllPayments.Click += BtnViewAllPayments_Click;
-
-            btnMainMenu = new Button { Text = "Main Menu", Location = new Point(160, 60), Width = 120, Height = 35, TabIndex = 19 };
-            btnMainMenu.Click += BtnMainMenu_Click;
+            btnSave = MakePrimaryButton("Save", new Point(20, 20), 150, 40, 10, BtnSave_Click);
+            btnViewSavings = MakeSecondaryButton("View Savings", new Point(180, 20), 170, 40, 11, BtnViewSavings_Click);
+            btnMainMenu = MakeSecondaryButton("Main Menu", new Point(360, 20), 150, 40, 12, BtnMainMenu_Click);
+            btnViewAllPayments = MakeSecondaryButton("View All Payments", new Point(180, 70), 200, 40, 13, BtnViewAllPayments_Click);
 
             bottomPanel.Controls.AddRange(new Control[] { btnSave, btnViewSavings, btnMainMenu, btnViewAllPayments });
 
@@ -145,23 +146,60 @@ namespace FM
                 lblLength, cboLength,
                 lblDate, dtpDate,
                 lblNotes, txtNotes,
-                bottomPanel,
+                bottomPanel
             });
 
-           
-            try
-            {
-                EnsureSchemaAndSeedCategories();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Database initialization failed:\n{ex.Message}",
-                    "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            // Optional: ensure schema (safe, but CreateInsertAndLoadSavings also ensures)
+            try { EnsureSchemaAndSeedCategories(); } catch { /* no-op */ }
+
+            ResumeLayout(false);
         }
 
-        // Fix: Pass required arguments to InsertSavingsToDb
+        // ---- Button style helpers (soft red + black border) ----
+        private Button MakePrimaryButton(string text, Point location, int width, int height, int tabIndex, EventHandler onClick)
+        {
+            var b = new Button
+            {
+                Text = text,
+                Location = location,
+                Width = width,
+                Height = height,
+                TabIndex = tabIndex,
+                BackColor = Color.FromArgb(255, 120, 120),
+                FlatStyle = FlatStyle.Flat
+            };
+            b.FlatAppearance.BorderColor = Color.Black;
+            b.FlatAppearance.BorderSize = 2;
+            b.Click += onClick;
+            return b;
+        }
 
+        private Button MakeSecondaryButton(string text, Point location, int width, int height, int tabIndex, EventHandler onClick)
+        {
+            var b = new Button
+            {
+                Text = text,
+                Location = location,
+                Width = width,
+                Height = height,
+                TabIndex = tabIndex,
+                BackColor = Color.FromArgb(255, 150, 150),
+                FlatStyle = FlatStyle.Flat
+            };
+            b.FlatAppearance.BorderColor = Color.Black;
+            b.FlatAppearance.BorderSize = 2;
+            b.Click += onClick;
+            return b;
+        }
+
+        // ---- Gradient background (LightCoral -> White) ----
+        private void AddSavings_Paint(object? sender, PaintEventArgs e)
+        {
+            using var brush = new LinearGradientBrush(ClientRectangle, Color.LightCoral, Color.White, LinearGradientMode.Vertical);
+            e.Graphics.FillRectangle(brush, ClientRectangle);
+        }
+
+        // ---- Events ----
         private void BtnSave_Click(object? sender, EventArgs e)
         {
             ResetFieldBackColors();
@@ -177,53 +215,45 @@ namespace FM
             {
                 Name = txtName.Text.Trim(),
                 Amount = amount,
-                Length = (cboLength.Visible ? (cboLength.SelectedItem?.ToString() ?? "Monthly") : "N/A"),
+                Length = cboLength.SelectedItem?.ToString() ?? "N/A",
                 Date = dtpDate.Value.Date,
                 Notes = txtNotes.Text.Trim()
             };
 
             try
             {
-                EnsureSchemaAndSeedCategories(); // idempotent
+                // Create table (if missing), insert, and load latest data back
+                var dt = CreateInsertAndLoadSavings(rec);
 
-                // Provide dummy values for categoryId and categoryName since they are not used in InsertSavingsToDb
-                InsertSavingsToDb(rec, 0, string.Empty);
-
+                // Keep your in-memory store if you use it elsewhere
                 SavingsStore.Savings.Add(rec);
 
-                MessageBox.Show("Expense saved.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Savings saved.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                // If you have a grid to show savings elsewhere, you can bind 'dt' there.
+                ClearFormForNext();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Could not save expense:\n{ex.Message}", "Database Error",
+                MessageBox.Show($"Could not save savings:\n{ex.Message}", "Database Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void BtnViewSavings_Click(object? sender, EventArgs e)
         {
-            var savings = new SavingsRecord();
-            //savings.Show();
+            // TODO: open your Savings list form when ready
+            // new SavingsListForm().Show();
         }
 
-        private void BtnMainMenu_Click(object? sender, EventArgs e)
-        {
-            this.Close();
-        }
+        private void BtnMainMenu_Click(object? sender, EventArgs e) => Close();
 
-        private void BtnViewAllPayments_Click(object? sender, EventArgs e)
-        {
-            var form = new AllPayments();
-            form.Show();
-        }
+        private void BtnViewAllPayments_Click(object? sender, EventArgs e) => new AllPayments().Show();
 
-        // ---- helpers ----
-
+        // ---- Validation & helpers ----
         private string? ValidateInputs(out decimal amount)
         {
             amount = 0m;
-
-
 
             if (string.IsNullOrWhiteSpace(txtName.Text))
             {
@@ -237,21 +267,21 @@ namespace FM
                 return "Please enter a valid Amount greater than 0.";
             }
 
-
             if (string.IsNullOrWhiteSpace(cboLength.Text))
-            { 
-               cboLength.BackColor = Color.MistyRose;
-               return "Please input a length of time.";
+            {
+                cboLength.BackColor = Color.MistyRose;
+                return "Please input a length of time.";
             }
 
             if (dtpDate.Value.Date > DateTime.Today)
             {
                 dtpDate.CalendarMonthBackground = Color.MistyRose;
-                return "Date Incurred cannot be in the future.";
+                return "Date cannot be in the future.";
             }
 
             return null;
         }
+
         private void ResetFieldBackColors()
         {
             txtName.BackColor = SystemColors.Window;
@@ -260,54 +290,95 @@ namespace FM
             dtpDate.CalendarMonthBackground = SystemColors.Window;
         }
 
-       
+        private void ClearFormForNext()
+        {
+            txtName.Clear();
+            txtAmount.Clear();
+            cboLength.SelectedIndex = -1;
+            dtpDate.Value = DateTime.Today;
+            txtNotes.Clear();
+            txtName.Focus();
+        }
+
+        // ---- DB schema helper (optional; CreateInsertAndLoadSavings also ensures) ----
         private void EnsureSchemaAndSeedCategories()
         {
             using var conn = new NpgsqlConnection(ConnStr);
             conn.Open();
 
-            // 1) Create base tables if missing
             using (var cmd = new NpgsqlCommand(@"
-
                 CREATE TABLE IF NOT EXISTS savings(
                     savings_id SERIAL PRIMARY KEY,
-                    name TEXT NOT NULL,
+                    name   TEXT NOT NULL,
                     amount NUMERIC(12,2) NOT NULL
                 );", conn))
             {
                 cmd.ExecuteNonQuery();
             }
 
-            // 2) Add/ensure columns (idempotent)
-            using (var cmd = new Npgsql.NpgsqlCommand(@"
-                ALTER TABLE savings ADD COLUMN IF NOT EXISTS length      TEXT;
-                ALTER TABLE savings ADD COLUMN IF NOT EXISTS date     DATE;
-                ALTER TABLE savings ADD COLUMN IF NOT EXISTS notes TEXT;
+            using (var cmd = new NpgsqlCommand(@"
+                ALTER TABLE savings ADD COLUMN IF NOT EXISTS length TEXT;
+                ALTER TABLE savings ADD COLUMN IF NOT EXISTS ""date"" DATE;
+                ALTER TABLE savings ADD COLUMN IF NOT EXISTS notes  TEXT;
             ", conn))
             {
                 cmd.ExecuteNonQuery();
             }
         }
 
-             private void InsertSavingsToDb(SavingsRecord rec, int categoryId, string categoryName)
+        // ---- Refactored create/insert/load (quotes ""date"" for safety) ----
+        private DataTable CreateInsertAndLoadSavings(SavingsRecord rec)
         {
             using var conn = new NpgsqlConnection(ConnStr);
             conn.Open();
 
-            using var cmd = new NpgsqlCommand(@"
-                INSERT INTO savings
-                    (name, amount, length, date, notes)
-                VALUES
-                    (@n,   @a,  @l,  @d,  @not);", conn);
+            // Ensure table exists
+            using (var cmd = new NpgsqlCommand(@"
+                CREATE TABLE IF NOT EXISTS savings(
+                    savings_id SERIAL PRIMARY KEY,
+                    name   TEXT NOT NULL,
+                    amount NUMERIC(12,2) NOT NULL,
+                    length TEXT,
+                    ""date"" DATE,
+                    notes  TEXT
+                );", conn))
+            {
+                cmd.ExecuteNonQuery();
+            }
 
-            cmd.Parameters.AddWithValue("@n", NpgsqlDbType.Text, rec.Name);
-            cmd.Parameters.AddWithValue("@a", NpgsqlDbType.Numeric, rec.Amount);
-            cmd.Parameters.AddWithValue("@l", NpgsqlDbType.Text, rec.Length);
-            cmd.Parameters.AddWithValue("@d", NpgsqlDbType.Date, rec.Date);
-            cmd.Parameters.AddWithValue("@not", NpgsqlDbType.Text, rec.Notes);
+            // Ensure columns exist (idempotent)
+            using (var cmd = new NpgsqlCommand(@"
+                ALTER TABLE savings
+                    ADD COLUMN IF NOT EXISTS length TEXT,
+                    ADD COLUMN IF NOT EXISTS ""date"" DATE,
+                    ADD COLUMN IF NOT EXISTS notes  TEXT;", conn))
+            {
+                cmd.ExecuteNonQuery();
+            }
 
-            cmd.ExecuteNonQuery();
+            // Insert the record
+            using (var cmd = new NpgsqlCommand(@"
+                INSERT INTO savings (name, amount, length, ""date"", notes)
+                VALUES (@n, @a, @l, @d, @not);", conn))
+            {
+                cmd.Parameters.AddWithValue("@n", NpgsqlDbType.Text, rec.Name);
+                cmd.Parameters.AddWithValue("@a", NpgsqlDbType.Numeric, rec.Amount);
+                cmd.Parameters.AddWithValue("@l", NpgsqlDbType.Text, (object?)rec.Length ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@d", NpgsqlDbType.Date, rec.Date);
+                cmd.Parameters.AddWithValue("@not", NpgsqlDbType.Text, string.IsNullOrWhiteSpace(rec.Notes) ? (object)DBNull.Value : rec.Notes);
+                cmd.ExecuteNonQuery();
+            }
+
+            // Load back
+            var dt = new DataTable();
+            using (var cmd = new NpgsqlCommand(
+                @"SELECT savings_id, name, amount, ""date"" AS date
+                  FROM savings
+                  ORDER BY ""date"" DESC;", conn))
+            using (var rdr = cmd.ExecuteReader())
+                dt.Load(rdr);
+
+            return dt;
         }
     }
 }
-        

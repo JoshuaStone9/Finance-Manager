@@ -1,19 +1,17 @@
 using System;
+using System.Data;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 using Npgsql;
-using System.Data;
 
 namespace FM
 {
     public partial class AddBill : Form
     {
         private Label lblAddBill;
-
-        private Label lblBillId;
-        private TextBox txtBillId;
 
         private Label lblName;
         private TextBox txtName;
@@ -28,8 +26,8 @@ namespace FM
         private Label lblLength;
         private ComboBox cboLength;
 
-        private Label lblDueDate;
-        private DateTimePicker dtpDueDate;
+        private Label lblDate;
+        private DateTimePicker dtpDate;
 
         private Label lblDescription;
         private TextBox txtDescription;
@@ -39,71 +37,81 @@ namespace FM
         private Button btnMainMenu;
         private Button btnViewAllPayments;
 
-        private Button btnAddInvestment;
-
-        // Bottom container to keep buttons visible on any DPI
         private Panel bottomPanel;
+        private PictureBox logo;
 
         public AddBill()
         {
-            // ---- Form ----
+            // --- Form ---
             Text = "Add Bill";
-            ClientSize = new Size(520, 560); // a bit taller for comfortable spacing
+            ClientSize = new Size(520, 620); // taller so bottom buttons are visible
             StartPosition = FormStartPosition.CenterScreen;
             DoubleBuffered = true;
 
+            this.Font = new Font("Montserrat", 10, FontStyle.Regular);
+            this.Paint += AddBill_Paint;
+
             SuspendLayout();
 
+            // optional logo
+            logo = new PictureBox
+            {
+                Image = Image.FromFile("images/FM_Logo_Main_Menu.png"),
+                SizeMode = PictureBoxSizeMode.StretchImage,
+                Size = new Size(120, 120),
+                Location = new Point((ClientSize.Width - 120) / 2, 0),
+                BackColor = Color.Transparent
+            };
+            Controls.Add(logo);
+
+            // Title
             lblAddBill = new Label
             {
                 Text = "Add Bill",
-                Location = new Point(220, 10),
+                Location = new Point((ClientSize.Width - 100) / 2, 120),
                 AutoSize = true,
-                Font = new Font("Cambria", 14F, FontStyle.Regular)
+                Font = new Font("Montserrat", 14F, FontStyle.Bold),
+                BackColor = Color.Transparent
             };
-
-            // Bill ID
-            lblBillId = new Label { Text = "Bill ID", Location = new Point(20, 60), AutoSize = true, TabIndex = 0 };
-            txtBillId = new TextBox { Location = new Point(160, 56), Width = 160, TabIndex = 1 };
-            txtBillId.Text = IdGenerator.GetNextId().ToString();
-            txtBillId.ReadOnly = true;
 
             // Name
-            lblName = new Label { Text = "Name", Location = new Point(20, 100), AutoSize = true, TabIndex = 2 };
-            txtName = new TextBox { Location = new Point(160, 96), Width = 300, TabIndex = 3 };
+            lblName = new Label { Text = "Name", Location = new Point(20, 170), AutoSize = true, BackColor = Color.Transparent, TabIndex = 0 };
+            txtName = new TextBox { Location = new Point(160, 166), Width = 300, TabIndex = 1 };
 
             // Amount
-            lblAmount = new Label { Text = "Amount", Location = new Point(20, 140), AutoSize = true, TabIndex = 4 };
-            lblPound = new Label { Text = "£", Location = new Point(160, 140), AutoSize = true };
-            txtAmount = new TextBox { Location = new Point(175, 136), Width = 120, TabIndex = 5 };
+            lblAmount = new Label { Text = "Amount", Location = new Point(20, 210), AutoSize = true, BackColor = Color.Transparent, TabIndex = 2 };
+            lblPound = new Label { Text = "£", Location = new Point(160, 210), AutoSize = true, BackColor = Color.Transparent };
+            txtAmount = new TextBox { Location = new Point(175, 206), Width = 120, TabIndex = 3 };
 
             // Type
-            lblType = new Label { Text = "Type", Location = new Point(20, 180), AutoSize = true, TabIndex = 6 };
+            lblType = new Label { Text = "Type", Location = new Point(20, 250), AutoSize = true, BackColor = Color.Transparent, TabIndex = 4 };
             cboType = new ComboBox
             {
-                Location = new Point(160, 176),
+                Location = new Point(160, 246),
                 Width = 160,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                TabIndex = 7
+                TabIndex = 5
             };
             cboType.Items.AddRange(new object[] { "Permanent", "Temporary" });
+            cboType.SelectedIndex = 0;
 
-            // Length Of Time (hidden unless Temporary)
+            // Length
             lblLength = new Label
             {
                 Text = "Length Of Time",
-                Location = new Point(20, 220),
+                Location = new Point(20, 290),
                 AutoSize = true,
-                TabIndex = 8,
+                BackColor = Color.Transparent,
+                TabIndex = 6,
                 Visible = false
             };
 
             cboLength = new ComboBox
             {
-                Location = new Point(160, 216),
+                Location = new Point(160, 286),
                 Width = 160,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                TabIndex = 9,
+                TabIndex = 7,
                 Visible = false
             };
             cboLength.Items.Add("Not Sure");
@@ -111,118 +119,107 @@ namespace FM
                 cboLength.Items.Add(m == 1 ? "1 Month" : $"{m} Months");
             cboLength.SelectedIndex = 0;
 
-            // Due Date
-            lblDueDate = new Label { Text = "Due Date", Location = new Point(20, 260), AutoSize = true, TabIndex = 10 };
-            dtpDueDate = new DateTimePicker
+            // Date
+            lblDate = new Label { Text = "Date", Location = new Point(20, 330), AutoSize = true, BackColor = Color.Transparent, TabIndex = 8 };
+            dtpDate = new DateTimePicker
             {
-                Location = new Point(160, 256),
+                Location = new Point(160, 326),
                 Width = 200,
-                TabIndex = 11,
+                TabIndex = 9,
                 Format = DateTimePickerFormat.Short
             };
 
             // Description
-            lblDescription = new Label { Text = "Description", Location = new Point(20, 300), AutoSize = true, TabIndex = 12 };
+            lblDescription = new Label { Text = "Description", Location = new Point(20, 370), AutoSize = true, BackColor = Color.Transparent, TabIndex = 10 };
             txtDescription = new TextBox
             {
-                Location = new Point(160, 296),
+                Location = new Point(160, 366),
                 Width = 300,
-                Height = 140,
+                Height = 150,
                 Multiline = true,
                 ScrollBars = ScrollBars.Vertical,
-                TabIndex = 13
+                TabIndex = 11
             };
 
-            // ---- Bottom button panel (always visible) ----
+            // Bottom panel
             bottomPanel = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 110
+                Height = 120,
+                BackColor = Color.Transparent
             };
 
-            btnAddInvestment = new Button
-            {
-                Text = "Add Investment",
-                Location = new Point(20, 15),
-                Width = 120,
-                Height = 35,
-                TabIndex = 16
-            };
-            btnAddInvestment.Click += BtnAddInvestment_Click;
+            btnSave = MakePrimaryButton("Save", new Point(20, 20), 150, 40, 12, BtnSave_Click);
+            btnViewBills = MakeSecondaryButton("View Bills", new Point(180, 20), 150, 40, 13, BtnViewBills_Click);
+            btnMainMenu = MakeSecondaryButton("Main Menu", new Point(340, 20), 150, 40, 14, BtnMainMenu_Click);
+            btnViewAllPayments = MakeSecondaryButton("View All Payments", new Point(180, 70), 200, 40, 15, BtnViewAllPayments_Click);
 
-            btnSave = new Button
-            {
-                Text = "Save",
-                Location = new Point(160, 15),
-                Width = 120,
-                Height = 35,
-                TabIndex = 14
-            };
-            btnSave.Click += BtnSave_Click;
+            bottomPanel.Controls.AddRange(new Control[] { btnSave, btnViewBills, btnMainMenu, btnViewAllPayments });
 
-            btnViewBills = new Button
-            {
-                Text = "View Bills",
-                Location = new Point(300, 15),
-                Width = 160,
-                Height = 35,
-                TabIndex = 15
-            };
-            btnViewBills.Click += BtnViewBills_Click;
-
-            btnMainMenu = new Button
-            {
-                Text = "Main Menu",
-                Location = new Point(160, 60),
-                Width = 120,
-                Height = 35,
-                TabIndex = 17
-            };
-            btnMainMenu.Click += BtnMainMenu_Click;
-
-            btnViewAllPayments = new Button
-            {
-                Text = "View All Payments",
-                Location = new Point(300, 60),
-                Width = 160,
-                Height = 35,
-                TabIndex = 18
-            };
-            btnViewAllPayments.Click += BtnViewAllPayments_Click;
-
-            bottomPanel.Controls.AddRange(new Control[]
-            {
-                btnAddInvestment, btnSave, btnViewBills, btnMainMenu, btnViewAllPayments
-            });
-
-            // ---- Add controls to form ----
             Controls.AddRange(new Control[]
             {
                 lblAddBill,
-                lblBillId, txtBillId,
                 lblName, txtName,
                 lblAmount, lblPound, txtAmount,
                 lblType, cboType,
                 lblLength, cboLength,
-                lblDueDate, dtpDueDate,
+                lblDate, dtpDate,
                 lblDescription, txtDescription,
-                bottomPanel // add last so it docks correctly
+                bottomPanel
             });
 
-            // Defaults + events
-            cboType.SelectedIndex = 0; // default Permanent
-            CboType_SelectedIndexChanged(this, EventArgs.Empty);
             cboType.SelectedIndexChanged += CboType_SelectedIndexChanged;
 
             ResumeLayout(false);
         }
 
+        private Button MakePrimaryButton(string text, Point location, int width, int height, int tabIndex, EventHandler onClick)
+        {
+            var b = new Button
+            {
+                Text = text,
+                Location = location,
+                Width = width,
+                Height = height,
+                TabIndex = tabIndex,
+                BackColor = Color.FromArgb(255, 120, 120),
+                FlatStyle = FlatStyle.Flat
+            };
+            b.FlatAppearance.BorderColor = Color.Black;
+            b.FlatAppearance.BorderSize = 2;
+            b.Click += onClick;
+            return b;
+        }
+
+        private Button MakeSecondaryButton(string text, Point location, int width, int height, int tabIndex, EventHandler onClick)
+        {
+            var b = new Button
+            {
+                Text = text,
+                Location = location,
+                Width = width,
+                Height = height,
+                TabIndex = tabIndex,
+                BackColor = Color.FromArgb(255, 150, 150),
+                FlatStyle = FlatStyle.Flat
+            };
+            b.FlatAppearance.BorderColor = Color.Black;
+            b.FlatAppearance.BorderSize = 2;
+            b.Click += onClick;
+            return b;
+        }
+
+        private void AddBill_Paint(object? sender, PaintEventArgs e)
+        {
+            using (var brush = new LinearGradientBrush(this.ClientRectangle, Color.LightCoral, Color.White, LinearGradientMode.Vertical))
+            {
+                e.Graphics.FillRectangle(brush, this.ClientRectangle);
+            }
+        }
+
         private void CboType_SelectedIndexChanged(object? sender, EventArgs e)
         {
-            bool isTemporary = string.Equals(
-                cboType.SelectedItem?.ToString(),
-                "Temporary",
-                StringComparison.OrdinalIgnoreCase);
+            bool isTemporary = string.Equals(cboType.SelectedItem?.ToString(), "Temporary", StringComparison.OrdinalIgnoreCase);
 
             lblLength.Visible = isTemporary;
             cboLength.Visible = isTemporary;
@@ -245,12 +242,11 @@ namespace FM
 
             var record = new BillRecord
             {
-                BillId = txtBillId.Text.Trim(),
                 Name = txtName.Text.Trim(),
                 Amount = amount,
                 Type = cboType.SelectedItem?.ToString() ?? "Permanent",
                 Length = (cboLength.Visible ? (cboLength.SelectedItem?.ToString() ?? "Not Sure") : "Not Applicable"),
-                DueDate = dtpDueDate.Value.Date,
+                DueDate = dtpDate.Value.Date,  
                 Description = txtDescription.Text.Trim()
             };
 
@@ -260,55 +256,13 @@ namespace FM
             ClearFormForNext();
         }
 
-        private void BtnViewBills_Click(object? sender, EventArgs e)
-        {
-            var manageBills = new BillsRecord();
-            manageBills.Show();
-        }
-
-        private void BtnMainMenu_Click(object? sender, EventArgs e)
-        {
-            this.Close();
-        }
-
-        private void BtnViewAllPayments_Click(object? sender, EventArgs e)
-        {
-            var allPayments = new AllPayments();
-            allPayments.Show();
-        }
-
-        private void BtnAddInvestment_Click(object? sender, EventArgs e)
-        {
-            var addInvestment = new AddInvestment();
-            addInvestment.Show();
-        }
-
-        // ===== Helpers =====
-
-        public static class IdGenerator
-        {
-         
-            private static int _nextId = 1;
-            
-            public static int GetNextId()
-            {
-                return _nextId++;
-            }
-  
-        }
+        private void BtnViewBills_Click(object? sender, EventArgs e) => new BillsRecord().Show();
+        private void BtnMainMenu_Click(object? sender, EventArgs e) => this.Close();
+        private void BtnViewAllPayments_Click(object? sender, EventArgs e) => new AllPayments().Show();
 
         private string? ValidateInputs(out decimal amount)
         {
             amount = 0m;
-
-
-            var exists = BillStore.Bills.Any(b =>
-                string.Equals(b.BillId, txtBillId.Text.Trim(), StringComparison.OrdinalIgnoreCase));
-            if (exists)
-            {
-                txtBillId.BackColor = Color.MistyRose;
-                return "That Bill ID already exists. Please use a unique ID.";
-            }
 
             if (string.IsNullOrWhiteSpace(txtName.Text))
             {
@@ -322,10 +276,10 @@ namespace FM
                 return "Please enter a valid Amount greater than 0.";
             }
 
-            if (dtpDueDate.Value.Date < DateTime.Today.AddDays(-1))
+            if (dtpDate.Value.Date < DateTime.Today.AddDays(-1))
             {
-                dtpDueDate.CalendarMonthBackground = Color.MistyRose;
-                return "Due Date cannot be in the past.";
+                dtpDate.CalendarMonthBackground = Color.MistyRose;
+                return "Date cannot be in the past.";
             }
 
             if (cboType.SelectedItem?.ToString() == "Temporary" && cboLength.SelectedIndex < 0)
@@ -339,33 +293,22 @@ namespace FM
 
         private void ResetFieldBackColors()
         {
-            txtBillId.BackColor = SystemColors.Window;
             txtName.BackColor = SystemColors.Window;
             txtAmount.BackColor = SystemColors.Window;
             cboLength.BackColor = SystemColors.Window;
-            dtpDueDate.CalendarMonthBackground = SystemColors.Window;
+            dtpDate.CalendarMonthBackground = SystemColors.Window;
         }
 
         private void ClearFormForNext()
         {
-            txtBillId.Clear();
             txtName.Clear();
             txtAmount.Clear();
             cboType.SelectedIndex = 0;
             cboLength.SelectedIndex = 0;
-            dtpDueDate.Value = DateTime.Today;
+            dtpDate.Value = DateTime.Today;
             txtDescription.Clear();
-            txtBillId.Focus();
+            txtName.Focus();
         }
-
-        // Optional getters
-        public string EnteredBillId => txtBillId.Text.Trim();
-        public string EnteredName => txtName.Text.Trim();
-        public decimal EnteredAmount => decimal.TryParse(txtAmount.Text, out var v) ? v : 0m;
-        public bool IsTemporary => string.Equals(cboType.SelectedItem?.ToString(), "Temporary", StringComparison.OrdinalIgnoreCase);
-        public string SelectedLength => cboLength.Visible ? cboLength.SelectedItem?.ToString() ?? "Not Sure" : "Not Applicable";
-        public DateTime DueDate => dtpDueDate.Value.Date;
-        public string DescriptionText => txtDescription.Text.Trim();
 
         private void CreateAndLoadBillsTable()
         {
@@ -374,7 +317,6 @@ namespace FM
             using var conn = new NpgsqlConnection(cs);
             conn.Open();
 
-            // Create tables if not exist
             using (var cmd = new NpgsqlCommand(@"
             CREATE TABLE IF NOT EXISTS bills(
                 billid SERIAL PRIMARY KEY,
@@ -382,34 +324,29 @@ namespace FM
                 amount NUMERIC(12,2) NOT NULL,
                 type TEXT,
                 length TEXT,
-                duedate DATE,
+                date DATE,
                 description TEXT
                 );", conn))
             {
                 cmd.ExecuteNonQuery();
             }
 
-            // Insert
             using (var cmd = new NpgsqlCommand(
-                "INSERT INTO bills(name,amount,type,length,duedate,description) VALUES(@n,@a,@t,@l,@d,@desc)", conn))
+                "INSERT INTO bills(name,amount,type,length,date,description) VALUES(@n,@a,@t,@l,@d,@desc)", conn))
             {
                 cmd.Parameters.AddWithValue("@n", txtName.Text);
                 cmd.Parameters.AddWithValue("@a", decimal.Parse(txtAmount.Text));
                 cmd.Parameters.AddWithValue("@t", cboType.SelectedItem?.ToString() ?? "Unknown");
-                cmd.Parameters.AddWithValue("@l", cboLength.Visible
-                    ? cboLength.SelectedItem?.ToString() ?? "Not Sure"
-                    : "Not Applicable");
-                cmd.Parameters.AddWithValue("@d", dtpDueDate.Value.Date);
+                cmd.Parameters.AddWithValue("@l", cboLength.Visible ? (cboLength.SelectedItem?.ToString() ?? "Not Sure") : "Not Applicable");
+                cmd.Parameters.AddWithValue("@d", dtpDate.Value.Date);
                 cmd.Parameters.AddWithValue("@desc", txtDescription.Text);
                 cmd.ExecuteNonQuery();
             }
 
-            // Load into DataTable (bind to DataGridView)
             var dt = new DataTable();
-            using (var cmd = new NpgsqlCommand("SELECT billid,name,amount,duedate FROM bills ORDER BY duedate DESC", conn))
-            using (var rdr = cmd.ExecuteReader()) dt.Load(rdr);
-
-            // e.g. gridBills.DataSource = dt;
+            using (var cmd = new NpgsqlCommand("SELECT billid,name,amount,date FROM bills ORDER BY date DESC", conn))
+            using (var rdr = cmd.ExecuteReader())
+                dt.Load(rdr);
         }
     }
 }

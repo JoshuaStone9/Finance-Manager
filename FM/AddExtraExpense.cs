@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
@@ -13,9 +14,6 @@ namespace FM
     public partial class AddExtraExpense : Form
     {
         private Label lblTitle;
-
-        private Label lblExpense_ID;
-        private TextBox txtExpense_ID;
 
         private Label lblName;
         private TextBox txtName;
@@ -27,11 +25,11 @@ namespace FM
         private Label lblCategory;
         private ComboBox cboCategory;
 
-        private Label lblType;
-        private ComboBox cboType;           // One-off | Recurring
+        private Label lblType;          // One-off | Recurring
+        private ComboBox cboType;
 
-        private Label lblFrequency;         // visible only when Recurring
-        private ComboBox cboFrequency;      // Weekly | Monthly | Quarterly | Yearly
+        private Label lblFrequency;     // visible only when Recurring
+        private ComboBox cboFrequency;  // Weekly | Monthly | Quarterly | Yearly
 
         private Label lblDate;
         private DateTimePicker dtpDate;
@@ -45,11 +43,11 @@ namespace FM
         private Button btnMainMenu;
 
         private Panel bottomPanel;
+        private PictureBox logo;
 
         private const string ConnStr =
             "Host=localhost;Database=Finance_Manager;Username=postgres;Password=banana001;SslMode=Disable";
 
-        // Helper class for binding
         private sealed class CategoryItem
         {
             public int Id { get; }
@@ -60,115 +58,127 @@ namespace FM
 
         public AddExtraExpense()
         {
+            // --- Form (matches your AddBill style) ---
             Text = "Add Extra Expense";
-            ClientSize = new Size(560, 540);
+            ClientSize = new Size(560, 620);
             StartPosition = FormStartPosition.CenterScreen;
+            DoubleBuffered = true;
+            Font = new Font("Montserrat", 10, FontStyle.Regular);
+            Paint += AddExtraExpense_Paint;
 
-            bottomPanel = new Panel { Dock = DockStyle.Bottom, Height = 100 };
+            SuspendLayout();
 
+            // Optional logo
+            logo = new PictureBox
+            {
+                Image = Image.FromFile("images/FM_Logo_Main_Menu.png"),
+                SizeMode = PictureBoxSizeMode.StretchImage,
+                Size = new Size(120, 120),
+                Location = new Point((ClientSize.Width - 120) / 2, 0),
+                BackColor = Color.Transparent
+            };
+            Controls.Add(logo);
+
+            // Title
             lblTitle = new Label
             {
                 Text = "Add Extra Expense",
-                Location = new Point(190, 12),
+                Location = new Point((ClientSize.Width - 220) / 2, 120),
                 AutoSize = true,
-                Font = new Font("Cambria", 14F, FontStyle.Regular)
+                Font = new Font("Montserrat", 14F, FontStyle.Bold),
+                BackColor = Color.Transparent
             };
 
-            // Expense ID
-            lblExpense_ID = new Label { Text = "Expense ID", Location = new Point(20, 60), AutoSize = true, TabIndex = 0 };
-            txtExpense_ID = new TextBox { Location = new Point(160, 56), Width = 180, TabIndex = 1 };
-
-            // Name
-            lblName = new Label { Text = "Name", Location = new Point(20, 100), AutoSize = true, TabIndex = 2 };
-            txtName = new TextBox { Location = new Point(160, 96), Width = 330, TabIndex = 3 };
+            // Name (shifted up to occupy former ID space)
+            lblName = new Label { Text = "Name", Location = new Point(20, 160), AutoSize = true, BackColor = Color.Transparent, TabIndex = 0 };
+            txtName = new TextBox { Location = new Point(160, 156), Width = 330, TabIndex = 1 };
 
             // Amount
-            lblAmount = new Label { Text = "Amount", Location = new Point(20, 140), AutoSize = true, TabIndex = 4 };
-            lblPound = new Label { Text = "£", Location = new Point(160, 140), AutoSize = true };
-            txtAmount = new TextBox { Location = new Point(175, 136), Width = 120, TabIndex = 5 };
+            lblAmount = new Label { Text = "Amount", Location = new Point(20, 200), AutoSize = true, BackColor = Color.Transparent, TabIndex = 2 };
+            lblPound = new Label { Text = "£", Location = new Point(160, 200), AutoSize = true, BackColor = Color.Transparent };
+            txtAmount = new TextBox { Location = new Point(175, 196), Width = 120, TabIndex = 3 };
 
             // Category
-            lblCategory = new Label { Text = "Category", Location = new Point(20, 180), AutoSize = true, TabIndex = 6 };
+            lblCategory = new Label { Text = "Category", Location = new Point(20, 240), AutoSize = true, BackColor = Color.Transparent, TabIndex = 4 };
             cboCategory = new ComboBox
             {
-                Location = new Point(160, 176),
+                Location = new Point(160, 236),
                 Width = 240,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                TabIndex = 5
+            };
+
+            // Type (One-off / Recurring)
+            lblType = new Label { Text = "Type", Location = new Point(20, 280), AutoSize = true, BackColor = Color.Transparent, TabIndex = 6 };
+            cboType = new ComboBox
+            {
+                Location = new Point(160, 276),
+                Width = 160,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 TabIndex = 7
             };
-            // Items are loaded from DB in EnsureSchemaAndSeedCategories()
-
-            // Type (One-off / Recurring)
-            lblType = new Label { Text = "Type", Location = new Point(20, 220), AutoSize = true, TabIndex = 8 };
-            cboType = new ComboBox
-            {
-                Location = new Point(160, 216),
-                Width = 160,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                TabIndex = 9
-            };
             cboType.Items.AddRange(new object[] { "One-off", "Recurring" });
 
-            // Frequency
+            // Frequency (only when Recurring)
             lblFrequency = new Label
             {
                 Text = "Frequency",
-                Location = new Point(20, 260),
+                Location = new Point(20, 320),
                 AutoSize = true,
+                BackColor = Color.Transparent,
                 Visible = false,
-                TabIndex = 10
+                TabIndex = 8
             };
             cboFrequency = new ComboBox
             {
-                Location = new Point(160, 256),
+                Location = new Point(160, 316),
                 Width = 160,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Visible = false,
-                TabIndex = 11
+                TabIndex = 9
             };
             cboFrequency.Items.AddRange(new object[] { "Weekly", "Monthly", "Quarterly", "Yearly" });
 
             // Date Incurred
-            lblDate = new Label { Text = "Date Incurred", Location = new Point(20, 300), AutoSize = true, TabIndex = 12 };
+            lblDate = new Label { Text = "Date Incurred", Location = new Point(20, 360), AutoSize = true, BackColor = Color.Transparent, TabIndex = 10 };
             dtpDate = new DateTimePicker
             {
-                Location = new Point(160, 296),
+                Location = new Point(160, 356),
                 Width = 200,
                 Format = DateTimePickerFormat.Short,
-                TabIndex = 13
+                TabIndex = 11
             };
 
             // Notes
-            lblNotes = new Label { Text = "Notes", Location = new Point(20, 340), AutoSize = true, TabIndex = 14 };
+            lblNotes = new Label { Text = "Notes", Location = new Point(20, 400), AutoSize = true, BackColor = Color.Transparent, TabIndex = 12 };
             txtNotes = new TextBox
             {
-                Location = new Point(160, 336),
+                Location = new Point(160, 396),
                 Width = 330,
                 Height = 110,
                 Multiline = true,
                 ScrollBars = ScrollBars.Vertical,
-                TabIndex = 15
+                TabIndex = 13
             };
 
-            // Buttons
-            btnSave = new Button { Text = "Save", Location = new Point(160, 15), Width = 120, Height = 36, TabIndex = 16 };
-            btnSave.Click += BtnSave_Click;
+            // Bottom button panel
+            bottomPanel = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 120,
+                BackColor = Color.Transparent
+            };
 
-            btnViewExpenses = new Button { Text = "View Expenses", Location = new Point(300, 15), Width = 200, Height = 36, TabIndex = 17 };
-            btnViewExpenses.Click += BtnViewExpenses_Click;
-
-            btnViewAllPayments = new Button { Text = "View All Payments", Location = new Point(300, 60), Width = 200, Height = 35, TabIndex = 18 };
-            btnViewAllPayments.Click += BtnViewAllPayments_Click;
-
-            btnMainMenu = new Button { Text = "Main Menu", Location = new Point(160, 60), Width = 120, Height = 35, TabIndex = 19 };
-            btnMainMenu.Click += BtnMainMenu_Click;
+            btnSave = MakePrimaryButton("Save", new Point(20, 20), 150, 40, 14, BtnSave_Click);
+            btnViewExpenses = MakeSecondaryButton("View Expenses", new Point(180, 20), 170, 40, 15, BtnViewExpenses_Click);
+            btnMainMenu = MakeSecondaryButton("Main Menu", new Point(360, 20), 150, 40, 16, BtnMainMenu_Click);
+            btnViewAllPayments = MakeSecondaryButton("View All Payments", new Point(180, 70), 200, 40, 17, BtnViewAllPayments_Click);
 
             bottomPanel.Controls.AddRange(new Control[] { btnSave, btnViewExpenses, btnMainMenu, btnViewAllPayments });
 
             Controls.AddRange(new Control[]
             {
                 lblTitle,
-                lblExpense_ID, txtExpense_ID,
                 lblName, txtName,
                 lblAmount, lblPound, txtAmount,
                 lblCategory, cboCategory,
@@ -176,32 +186,76 @@ namespace FM
                 lblFrequency, cboFrequency,
                 lblDate, dtpDate,
                 lblNotes, txtNotes,
-                bottomPanel,
+                bottomPanel
             });
 
             // Defaults + events
             cboType.SelectedIndex = 0;
             cboType.SelectedIndexChanged += CboType_SelectedIndexChanged;
 
-            // Ensure schema, seed, and load categories
-            try
-            {
-                EnsureSchemaAndSeedCategories();
-            }
+            // DB init + load categories
+            try { EnsureSchemaAndSeedCategories(); }
             catch (Exception ex)
             {
                 MessageBox.Show($"Database initialization failed:\n{ex.Message}",
                     "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+
+            ResumeLayout(false);
         }
 
+        // ---- Style helpers (match AddBill) ----
+        private Button MakePrimaryButton(string text, Point location, int width, int height, int tabIndex, EventHandler onClick)
+        {
+            var b = new Button
+            {
+                Text = text,
+                Location = location,
+                Width = width,
+                Height = height,
+                TabIndex = tabIndex,
+                BackColor = Color.FromArgb(255, 120, 120),
+                FlatStyle = FlatStyle.Flat
+            };
+            b.FlatAppearance.BorderColor = Color.Black;
+            b.FlatAppearance.BorderSize = 2;
+            b.Click += onClick;
+            return b;
+        }
+
+        private Button MakeSecondaryButton(string text, Point location, int width, int height, int tabIndex, EventHandler onClick)
+        {
+            var b = new Button
+            {
+                Text = text,
+                Location = location,
+                Width = width,
+                Height = height,
+                TabIndex = tabIndex,
+                BackColor = Color.FromArgb(255, 150, 150),
+                FlatStyle = FlatStyle.Flat
+            };
+            b.FlatAppearance.BorderColor = Color.Black;
+            b.FlatAppearance.BorderSize = 2;
+            b.Click += onClick;
+            return b;
+        }
+
+        // ---- Gradient background ----
+        private void AddExtraExpense_Paint(object? sender, PaintEventArgs e)
+        {
+            using var brush = new LinearGradientBrush(ClientRectangle, Color.LightCoral, Color.White, LinearGradientMode.Vertical);
+            e.Graphics.FillRectangle(brush, ClientRectangle);
+        }
+
+        // ---- UI logic ----
         private void CboType_SelectedIndexChanged(object? sender, EventArgs e)
         {
             bool recurring = string.Equals(cboType.SelectedItem?.ToString(), "Recurring", StringComparison.OrdinalIgnoreCase);
             lblFrequency.Visible = recurring;
             cboFrequency.Visible = recurring;
             if (recurring && cboFrequency.SelectedIndex < 0)
-                cboFrequency.SelectedIndex = 1; // default Monthly
+                cboFrequency.SelectedIndex = 1; // Monthly
         }
 
         private void BtnSave_Click(object? sender, EventArgs e)
@@ -215,16 +269,15 @@ namespace FM
                 return;
             }
 
-            // Get both the id and name from the bound combo
             int categoryId = (cboCategory.SelectedValue is int v) ? v : 0;
             string categoryName = (cboCategory.SelectedItem as CategoryItem)?.Name ?? string.Empty;
 
             var rec = new ExtraExpenseRecord
             {
-                Expense_ID = txtExpense_ID.Text.Trim(),
+                // Expense_ID removed
                 Name = txtName.Text.Trim(),
                 Amount = amount,
-                Category = categoryName,  // keep name in memory/store if you use it elsewhere
+                Category = categoryName,
                 Type = cboType.SelectedItem?.ToString() ?? "One-off",
                 Frequency = (cboFrequency.Visible ? (cboFrequency.SelectedItem?.ToString() ?? "Monthly") : "N/A"),
                 DateIncurred = dtpDate.Value.Date,
@@ -233,7 +286,7 @@ namespace FM
 
             try
             {
-                EnsureSchemaAndSeedCategories(); // idempotent
+                EnsureSchemaAndSeedCategories();
 
                 if (categoryId <= 0)
                     throw new InvalidOperationException("Selected category is invalid.");
@@ -252,41 +305,14 @@ namespace FM
             }
         }
 
-        private void BtnViewExpenses_Click(object? sender, EventArgs e)
-        {
-            var expenses = new ExtraExpensesRecord();
-            expenses.Show();
-        }
+        private void BtnViewExpenses_Click(object? sender, EventArgs e) => new ExtraExpensesRecord().Show();
+        private void BtnMainMenu_Click(object? sender, EventArgs e) => Close();
+        private void BtnViewAllPayments_Click(object? sender, EventArgs e) => new AllPayments().Show();
 
-        private void BtnMainMenu_Click(object? sender, EventArgs e)
-        {
-            this.Close();
-        }
-
-        private void BtnViewAllPayments_Click(object? sender, EventArgs e)
-        {
-            var form = new AllPayments();
-            form.Show();
-        }
-
-        // ---- helpers ----
-
+        // ---- Validation & helpers (Expense ID references removed) ----
         private string? ValidateInputs(out decimal amount)
         {
             amount = 0m;
-
-            if (string.IsNullOrWhiteSpace(txtExpense_ID.Text))
-            {
-                txtExpense_ID.BackColor = Color.MistyRose;
-                return "Please enter an Expense ID.";
-            }
-
-            if (ExtraExpenseStore.Expenses.Any(x =>
-                string.Equals(x.Expense_ID, txtExpense_ID.Text.Trim(), StringComparison.OrdinalIgnoreCase)))
-            {
-                txtExpense_ID.BackColor = Color.MistyRose;
-                return "That Expense ID already exists. Use a unique ID.";
-            }
 
             if (string.IsNullOrWhiteSpace(txtName.Text))
             {
@@ -324,7 +350,6 @@ namespace FM
 
         private void ResetFieldBackColors()
         {
-            txtExpense_ID.BackColor = SystemColors.Window;
             txtName.BackColor = SystemColors.Window;
             txtAmount.BackColor = SystemColors.Window;
             cboCategory.BackColor = SystemColors.Window;
@@ -334,11 +359,9 @@ namespace FM
 
         private void ClearForNext()
         {
-            txtExpense_ID.Clear();
             txtName.Clear();
             txtAmount.Clear();
 
-            // Reset selection safely for a bound combo
             if (cboCategory.DataSource != null && cboCategory.Items.Count > 0)
                 cboCategory.SelectedIndex = 0;
 
@@ -347,15 +370,15 @@ namespace FM
             lblFrequency.Visible = cboFrequency.Visible = false;
             dtpDate.Value = DateTime.Today;
             txtNotes.Clear();
-            txtExpense_ID.Focus();
+            txtName.Focus();
         }
 
+        // ---- DB (unchanged) ----
         private void EnsureSchemaAndSeedCategories()
         {
             using var conn = new NpgsqlConnection(ConnStr);
             conn.Open();
 
-            // 1) Create base tables if missing
             using (var cmd = new NpgsqlCommand(@"
                 CREATE TABLE IF NOT EXISTS categories(
                     id SERIAL PRIMARY KEY,
@@ -364,17 +387,16 @@ namespace FM
 
                 CREATE TABLE IF NOT EXISTS extra_expenses(
                     extra_expense_id SERIAL PRIMARY KEY,
-                    name TEXT NOT NULL,
+                    name   TEXT NOT NULL,
                     amount NUMERIC(12,2) NOT NULL
                 );", conn))
             {
                 cmd.ExecuteNonQuery();
             }
 
-            // 2) Add/ensure columns (idempotent)
-            using (var cmd = new Npgsql.NpgsqlCommand(@"
+            using (var cmd = new NpgsqlCommand(@"
                 ALTER TABLE extra_expenses ADD COLUMN IF NOT EXISTS category_id INT;
-                ALTER TABLE extra_expenses ADD COLUMN IF NOT EXISTS category    TEXT; -- keep legacy text too
+                ALTER TABLE extra_expenses ADD COLUMN IF NOT EXISTS category    TEXT;
                 ALTER TABLE extra_expenses ADD COLUMN IF NOT EXISTS type        TEXT;
                 ALTER TABLE extra_expenses ADD COLUMN IF NOT EXISTS length      TEXT;
                 ALTER TABLE extra_expenses ADD COLUMN IF NOT EXISTS duedate     DATE;
@@ -384,7 +406,6 @@ namespace FM
                 cmd.ExecuteNonQuery();
             }
 
-            // 3) Foreign key (best-effort)
             using (var cmd = new NpgsqlCommand(@"
                 DO $$
                 BEGIN
@@ -405,7 +426,6 @@ namespace FM
                 cmd.ExecuteNonQuery();
             }
 
-            // 4) Seed categories
             string[] categories = {
                 "Groceries","Transport","Entertainment","Dining Out",
                 "Utilities","Health","Education","Gifts","Home",
@@ -424,9 +444,7 @@ namespace FM
                 tx.Commit();
             }
 
-            // 5) Backfill either way (legacy rows)
             using (var cmd = new NpgsqlCommand(@"
-                -- Fill category_id from category name (legacy)
                 UPDATE extra_expenses e
                 SET category_id = c.id
                 FROM categories c
@@ -434,7 +452,6 @@ namespace FM
                   AND e.category IS NOT NULL
                   AND lower(e.category) = lower(c.name);
 
-                -- Fill category text from category_id if missing
                 UPDATE extra_expenses e
                 SET category = c.name
                 FROM categories c
@@ -444,7 +461,6 @@ namespace FM
                 cmd.ExecuteNonQuery();
             }
 
-            // 6) Load categories into the ComboBox using proper data binding
             var list = new List<CategoryItem>();
             using (var cmd = new NpgsqlCommand("SELECT id, name FROM categories ORDER BY name;", conn))
             using (var rdr = cmd.ExecuteReader())
@@ -453,7 +469,7 @@ namespace FM
                     list.Add(new CategoryItem(rdr.GetInt32(0), rdr.GetString(1)));
             }
 
-            cboCategory.DataSource = null; // reset any previous binding/items
+            cboCategory.DataSource = null;
             cboCategory.DisplayMember = nameof(CategoryItem.Name);
             cboCategory.ValueMember = nameof(CategoryItem.Id);
             cboCategory.DataSource = list;

@@ -12,4 +12,19 @@
     <PackageReference Include="Npgsql" Version="9.0.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="images\FM_Logo.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="images\FM_Logo_Main_Menu.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="images\NotificationBell_No_Notifications.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="images\NotificationBell_With_Notifications.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
