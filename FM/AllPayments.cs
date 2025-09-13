@@ -84,6 +84,7 @@ namespace FM
 
             Controls.AddRange(new Control[] { gridBills, gridExpenses, gridInvestments, gridSavings });
 
+            //test 
             // Bottom Total panel
             bottomPanel = new Panel
             {
