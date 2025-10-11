@@ -1,19 +1,17 @@
-﻿using Microsoft.VisualBasic;
-using Npgsql;
-using NpgsqlTypes;
+﻿using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Globalization;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Globalization;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace FM
 {
     public partial class AddInvestment : Form
     {
-        // ---- UI ----
         private Label lblTitle;
 
         private Label lblName;
@@ -36,7 +34,7 @@ namespace FM
         private TextBox txtNotes;
 
         private Button btnSave;
-        private Button btnViewBills;         // keeps existing handler name, text will say "View Investments"
+        private Button btnViewBills;
         private Button btnViewAllPayments;
         private Button btnMainMenu;
         private Button btnCalculateInvestments;
@@ -46,7 +44,6 @@ namespace FM
 
         public AddInvestment()
         {
-            // ---- Form styling (match app) ----
             Text = "Add Investment";
             ClientSize = new Size(560, 620);
             StartPosition = FormStartPosition.CenterScreen;
@@ -54,12 +51,10 @@ namespace FM
             Font = new Font("Montserrat", 10, FontStyle.Regular);
             Paint += AddInvestment_Paint;
 
-            // Ensure categories are loaded/bound as soon as the form is ready (keep your original behavior)
             this.Load += AddInvestment_Load;
 
             SuspendLayout();
 
-            // (Optional) top-center logo
             logo = new PictureBox
             {
                 Image = Image.FromFile("images/FM_Logo_Main_Menu.png"),
@@ -70,7 +65,6 @@ namespace FM
             };
             Controls.Add(logo);
 
-            // Title
             lblTitle = new Label
             {
                 Text = "Add Investment",
@@ -80,16 +74,13 @@ namespace FM
                 BackColor = Color.Transparent
             };
 
-            // Name
             lblName = new Label { Text = "Name", Location = new Point(20, 160), AutoSize = true, BackColor = Color.Transparent, TabIndex = 0 };
             txtName = new TextBox { Location = new Point(160, 156), Width = 330, TabIndex = 1 };
 
-            // Amount
             lblAmount = new Label { Text = "Amount", Location = new Point(20, 200), AutoSize = true, BackColor = Color.Transparent, TabIndex = 2 };
             lblPound = new Label { Text = "£", Location = new Point(160, 200), AutoSize = true, BackColor = Color.Transparent };
             txtAmount = new TextBox { Location = new Point(175, 196), Width = 120, TabIndex = 3 };
 
-            // Category
             lblCategory = new Label { Text = "Category", Location = new Point(20, 240), AutoSize = true, BackColor = Color.Transparent, TabIndex = 4 };
             cbCategory = new ComboBox
             {
@@ -99,7 +90,6 @@ namespace FM
                 TabIndex = 5
             };
 
-            // Length
             lblLength = new Label { Text = "Length", Location = new Point(20, 280), AutoSize = true, BackColor = Color.Transparent, TabIndex = 6 };
             cbLength = new ComboBox
             {
@@ -110,7 +100,6 @@ namespace FM
             };
             cbLength.Items.AddRange(new object[] { "One-time", "Monthly", "Quarterly", "Yearly" });
 
-            // Date
             lblDate = new Label { Text = "Date", Location = new Point(20, 320), AutoSize = true, BackColor = Color.Transparent, TabIndex = 8 };
             dtDate = new DateTimePicker
             {
@@ -120,7 +109,6 @@ namespace FM
                 TabIndex = 9
             };
 
-            // Notes
             lblNotes = new Label { Text = "Notes", Location = new Point(20, 360), AutoSize = true, BackColor = Color.Transparent, TabIndex = 10 };
             txtNotes = new TextBox
             {
@@ -132,7 +120,6 @@ namespace FM
                 TabIndex = 11
             };
 
-            // Bottom buttons (transparent so gradient shows)
             bottomPanel = new Panel
             {
                 Dock = DockStyle.Bottom,
@@ -163,7 +150,6 @@ namespace FM
             ResumeLayout(false);
         }
 
-        // ---- Button style helpers (soft red + black border) ----
         private Button MakePrimaryButton(string text, Point location, int width, int height, int tabIndex, EventHandler onClick)
         {
             var b = new Button
@@ -200,20 +186,17 @@ namespace FM
             return b;
         }
 
-        // ---- Gradient background (LightCoral -> White) ----
         private void AddInvestment_Paint(object? sender, PaintEventArgs e)
         {
             using var brush = new LinearGradientBrush(ClientRectangle, Color.LightCoral, Color.White, LinearGradientMode.Vertical);
             e.Graphics.FillRectangle(brush, ClientRectangle);
         }
 
-        // ================== Your original logic (kept) ==================
-
         private void AddInvestment_Load(object? sender, EventArgs e)
         {
             try
             {
-                EnsureSchemaAndSeedCategories(); // creates tables, seeds, binds cbCategory
+                EnsureSchemaAndSeedCategories();
             }
             catch (Exception ex)
             {
@@ -222,8 +205,26 @@ namespace FM
             }
         }
 
-        private const string ConnStr =
-            "Host=localhost;Database=Finance_Manager;Username=postgres;Password=banana001;SslMode=Disable";
+        private static string BuildConnStr()
+        {
+            var pwd = Environment.GetEnvironmentVariable("DB_PASSWORD", EnvironmentVariableTarget.User);
+            if (string.IsNullOrWhiteSpace(pwd))
+                throw new InvalidOperationException(
+                    "DB_PASSWORD environment variable not set for the current user.\n" +
+                    "Set it with: setx DB_PASSWORD \"YourPassword\" and restart Visual Studio/your app.");
+
+            var builder = new SqlConnectionStringBuilder
+            {
+                DataSource = "STONEY,1433",
+                InitialCatalog = "Finance_Manager",
+                UserID = "josh",
+                Password = pwd,
+                Encrypt = true,
+                TrustServerCertificate = true
+            };
+
+            return builder.ConnectionString;
+        }
 
         private sealed class CategoryItem
         {
@@ -249,9 +250,9 @@ namespace FM
 
                 var rec = new InvestmentRecord
                 {
-                    Investment_ID = "", // will be set after DB insert (RETURNING)
+                    Investment_ID = "",
                     Name = txtName.Text.Trim(),
-                    Amount = txtAmount.Text.Trim(),   // parsed to decimal during insert
+                    Amount = txtAmount.Text.Trim(),
                     Date = dtDate.Value.Date,
                     Category = investment_category,
                     Length = cbLength.SelectedItem?.ToString() ?? cbLength.Text ?? "One-time",
@@ -310,41 +311,54 @@ namespace FM
 
         private void EnsureSchemaAndSeedCategories()
         {
-            using var conn = new NpgsqlConnection(ConnStr);
+            using var conn = new SqlConnection(BuildConnStr());
             conn.Open();
 
-            using (var cmd = new NpgsqlCommand(@"
-CREATE TABLE IF NOT EXISTS investment_categories(
-    id   SERIAL PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE
-);
+            using (var cmd = new SqlCommand(@"
+IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[investment_categories]') AND type = 'U')
+BEGIN
+    CREATE TABLE dbo.investment_categories(
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        name NVARCHAR(200) NOT NULL UNIQUE
+    );
+END;
 
-CREATE TABLE IF NOT EXISTS investments(
-    investments_id SERIAL PRIMARY KEY,
-    name           TEXT NOT NULL,
-    amount         NUMERIC(12,2) NOT NULL
-);", conn))
+IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[investments]') AND type = 'U')
+BEGIN
+    CREATE TABLE dbo.investments(
+        investments_id INT IDENTITY(1,1) PRIMARY KEY,
+        name           NVARCHAR(200) NOT NULL,
+        amount         DECIMAL(12,2) NOT NULL
+    );
+END;", conn))
             {
                 cmd.ExecuteNonQuery();
             }
 
-            using (var cmd = new NpgsqlCommand(@"
-ALTER TABLE investments ADD COLUMN IF NOT EXISTS date        DATE;
-ALTER TABLE investments ADD COLUMN IF NOT EXISTS category_id INT;
-ALTER TABLE investments ADD COLUMN IF NOT EXISTS category    TEXT;
-ALTER TABLE investments ADD COLUMN IF NOT EXISTS length      TEXT;
-ALTER TABLE investments ADD COLUMN IF NOT EXISTS notes       TEXT;", conn))
+            using (var cmd = new SqlCommand(@"
+IF COL_LENGTH('dbo.investments','date') IS NULL
+    ALTER TABLE dbo.investments ADD [date] DATE;
+IF COL_LENGTH('dbo.investments','category_id') IS NULL
+    ALTER TABLE dbo.investments ADD category_id INT;
+IF COL_LENGTH('dbo.investments','category') IS NULL
+    ALTER TABLE dbo.investments ADD category NVARCHAR(200);
+IF COL_LENGTH('dbo.investments','length') IS NULL
+    ALTER TABLE dbo.investments ADD [length] NVARCHAR(100);
+IF COL_LENGTH('dbo.investments','notes') IS NULL
+    ALTER TABLE dbo.investments ADD notes NVARCHAR(MAX);
+", conn))
             {
                 cmd.ExecuteNonQuery();
             }
 
-            using (var cmd = new NpgsqlCommand(@"
-ALTER TABLE investments DROP CONSTRAINT IF EXISTS fk_investments_category;
-ALTER TABLE investments
-  ADD CONSTRAINT fk_investments_category
-  FOREIGN KEY (category_id) REFERENCES investment_categories(id);", conn))
+            using (var cmd = new SqlCommand(@"
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_investments_category')
+BEGIN
+    ALTER TABLE dbo.investments
+    ADD CONSTRAINT FK_investments_category FOREIGN KEY (category_id) REFERENCES dbo.investment_categories(id);
+END;", conn))
             {
-                cmd.ExecuteNonQuery();
+                try { cmd.ExecuteNonQuery(); } catch { }
             }
 
             string[] inv = { "Stocks", "ETF", "Crypto", "Real Estate" };
@@ -352,35 +366,33 @@ ALTER TABLE investments
             {
                 foreach (var c in inv)
                 {
-                    using var upsert = new NpgsqlCommand(
-                        "INSERT INTO investment_categories(name) VALUES (@name) ON CONFLICT (name) DO NOTHING;",
+                    using var upsert = new SqlCommand(
+                        "IF NOT EXISTS (SELECT 1 FROM dbo.investment_categories WHERE name = @name) INSERT INTO dbo.investment_categories(name) VALUES(@name);",
                         conn, tx);
-                    upsert.Parameters.AddWithValue("@name", NpgsqlDbType.Text, c);
+                    upsert.Parameters.Add("@name", SqlDbType.NVarChar, 200).Value = c;
                     upsert.ExecuteNonQuery();
                 }
                 tx.Commit();
             }
 
-            using (var cmd = new NpgsqlCommand(@"
-UPDATE investments e
+            using (var cmd = new SqlCommand(@"
+UPDATE i
 SET category_id = ic.id
-FROM investment_categories ic
-WHERE e.category_id IS NULL
-  AND e.category IS NOT NULL
-  AND lower(e.category) = lower(ic.name);
+FROM dbo.investments i
+JOIN dbo.investment_categories ic ON LOWER(i.category) = LOWER(ic.name)
+WHERE i.category_id IS NULL AND i.category IS NOT NULL AND i.category <> '';
 
-UPDATE investments e
+UPDATE i
 SET category = ic.name
-FROM investment_categories ic
-WHERE (e.category IS NULL OR e.category = '')
-  AND e.category_id = ic.id;", conn))
+FROM dbo.investments i
+JOIN dbo.investment_categories ic ON i.category_id = ic.id
+WHERE (i.category IS NULL OR i.category = '');", conn))
             {
                 cmd.ExecuteNonQuery();
             }
 
             var list = new List<CategoryItem>();
-            using (var cmd = new NpgsqlCommand(
-                "SELECT id, name FROM investment_categories ORDER BY name;", conn))
+            using (var cmd = new SqlCommand("SELECT id, name FROM dbo.investment_categories ORDER BY name;", conn))
             using (var rdr = cmd.ExecuteReader())
             {
                 while (rdr.Read())
@@ -398,7 +410,7 @@ WHERE (e.category IS NULL OR e.category = '')
 
         private void InsertInvestmentsToDb(InvestmentRecord rec, int categoryId, string categoryName)
         {
-            using var conn = new NpgsqlConnection(ConnStr);
+            using var conn = new SqlConnection(BuildConnStr());
             conn.Open();
 
             if (!decimal.TryParse(rec.Amount, NumberStyles.Number, CultureInfo.CurrentCulture, out var amount) &&
@@ -407,24 +419,39 @@ WHERE (e.category IS NULL OR e.category = '')
                 throw new FormatException("Amount must be a number, e.g. 1234.56");
             }
 
-            using var cmd = new NpgsqlCommand(@"
-INSERT INTO investments
-    (name, amount, date, category_id, category, length, notes)
+            using var cmd = new SqlCommand(@"
+INSERT INTO dbo.investments
+    (name, amount, [date], category_id, category, [length], notes)
+OUTPUT INSERTED.investments_id
 VALUES
-    (@n,   @a,     @d,   @cat_id,     @cat,    @l,     @notes)
-RETURNING investments_id;", conn);
+    (@n, @a, @d, @cat_id, @cat, @l, @notes);", conn);
 
-            cmd.Parameters.Add("@n", NpgsqlDbType.Text).Value = rec.Name?.Trim();
-            cmd.Parameters.Add("@a", NpgsqlDbType.Numeric).Value = amount;
-            cmd.Parameters.Add("@d", NpgsqlDbType.Date).Value = rec.Date.Date;
-            cmd.Parameters.Add("@cat_id", NpgsqlDbType.Integer).Value = categoryId;
-            cmd.Parameters.Add("@cat", NpgsqlDbType.Text).Value = categoryName;
-            cmd.Parameters.Add("@l", NpgsqlDbType.Text).Value = rec.Length ?? "One-time";
-            cmd.Parameters.Add("@notes", NpgsqlDbType.Text).Value = (object?)rec.Description ?? DBNull.Value;
+            cmd.Parameters.Add("@n", SqlDbType.NVarChar, 200).Value = (object?)rec.Name?.Trim() ?? DBNull.Value;
+
+            var pAmt = cmd.Parameters.Add("@a", SqlDbType.Decimal);
+            pAmt.Precision = 12; pAmt.Scale = 2;
+            pAmt.Value = amount;
+
+            cmd.Parameters.Add("@d", SqlDbType.Date).Value = rec.Date.Date;
+            cmd.Parameters.Add("@cat_id", SqlDbType.Int).Value = categoryId;
+            cmd.Parameters.Add("@cat", SqlDbType.NVarChar, 200).Value = categoryName ?? (object)DBNull.Value;
+            cmd.Parameters.Add("@l", SqlDbType.NVarChar, 100).Value = rec.Length ?? (object)DBNull.Value;
+            cmd.Parameters.Add("@notes", SqlDbType.NVarChar).Value = string.IsNullOrWhiteSpace(rec.Description) ? (object)DBNull.Value : rec.Description;
 
             var newIdObj = cmd.ExecuteScalar();
             if (newIdObj != null && newIdObj != DBNull.Value)
                 rec.Investment_ID = Convert.ToString(newIdObj, CultureInfo.InvariantCulture) ?? string.Empty;
         }
+    }
+
+    public class InvestmentRecord
+    {
+        public string Investment_ID { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Amount { get; set; } = "";
+        public DateTime Date { get; set; }
+        public string Category { get; set; } = "";
+        public string Length { get; set; } = "";
+        public string Description { get; set; } = "";
     }
 }

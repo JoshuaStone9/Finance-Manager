@@ -1,3 +1,4 @@
+using Microsoft.Data.SqlClient;
 using System;
 using System.Data;
 using System.Drawing;
@@ -5,7 +6,6 @@ using System.Drawing.Drawing2D;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
-using Npgsql;
 
 namespace FM
 {
@@ -42,9 +42,8 @@ namespace FM
 
         public AddBill()
         {
-            // --- Form ---
             Text = "Add Bill";
-            ClientSize = new Size(520, 620); // taller so bottom buttons are visible
+            ClientSize = new Size(520, 620);
             StartPosition = FormStartPosition.CenterScreen;
             DoubleBuffered = true;
 
@@ -53,7 +52,6 @@ namespace FM
 
             SuspendLayout();
 
-            // optional logo
             logo = new PictureBox
             {
                 Image = Image.FromFile("images/FM_Logo_Main_Menu.png"),
@@ -64,7 +62,6 @@ namespace FM
             };
             Controls.Add(logo);
 
-            // Title
             lblAddBill = new Label
             {
                 Text = "Add Bill",
@@ -74,16 +71,13 @@ namespace FM
                 BackColor = Color.Transparent
             };
 
-            // Name
             lblName = new Label { Text = "Name", Location = new Point(20, 170), AutoSize = true, BackColor = Color.Transparent, TabIndex = 0 };
             txtName = new TextBox { Location = new Point(160, 166), Width = 300, TabIndex = 1 };
 
-            // Amount
             lblAmount = new Label { Text = "Amount", Location = new Point(20, 210), AutoSize = true, BackColor = Color.Transparent, TabIndex = 2 };
             lblPound = new Label { Text = "£", Location = new Point(160, 210), AutoSize = true, BackColor = Color.Transparent };
             txtAmount = new TextBox { Location = new Point(175, 206), Width = 120, TabIndex = 3 };
 
-            // Type
             lblType = new Label { Text = "Type", Location = new Point(20, 250), AutoSize = true, BackColor = Color.Transparent, TabIndex = 4 };
             cboType = new ComboBox
             {
@@ -95,7 +89,6 @@ namespace FM
             cboType.Items.AddRange(new object[] { "Permanent", "Temporary" });
             cboType.SelectedIndex = 0;
 
-            // Length
             lblLength = new Label
             {
                 Text = "Length Of Time",
@@ -119,7 +112,6 @@ namespace FM
                 cboLength.Items.Add(m == 1 ? "1 Month" : $"{m} Months");
             cboLength.SelectedIndex = 0;
 
-            // Date
             lblDate = new Label { Text = "Date", Location = new Point(20, 330), AutoSize = true, BackColor = Color.Transparent, TabIndex = 8 };
             dtpDate = new DateTimePicker
             {
@@ -129,7 +121,6 @@ namespace FM
                 Format = DateTimePickerFormat.Short
             };
 
-            // Description
             lblDescription = new Label { Text = "Description", Location = new Point(20, 370), AutoSize = true, BackColor = Color.Transparent, TabIndex = 10 };
             txtDescription = new TextBox
             {
@@ -141,7 +132,6 @@ namespace FM
                 TabIndex = 11
             };
 
-            // Bottom panel
             bottomPanel = new Panel
             {
                 Dock = DockStyle.Bottom,
@@ -246,7 +236,7 @@ namespace FM
                 Amount = amount,
                 Type = cboType.SelectedItem?.ToString() ?? "Permanent",
                 Length = (cboLength.Visible ? (cboLength.SelectedItem?.ToString() ?? "Not Sure") : "Not Applicable"),
-                DueDate = dtpDate.Value.Date,  
+                DueDate = dtpDate.Value.Date,
                 Description = txtDescription.Text.Trim()
             };
 
@@ -274,12 +264,6 @@ namespace FM
             {
                 txtAmount.BackColor = Color.MistyRose;
                 return "Please enter a valid Amount greater than 0.";
-            }
-
-            if (dtpDate.Value.Date < DateTime.Today.AddDays(-1))
-            {
-                dtpDate.CalendarMonthBackground = Color.MistyRose;
-                return "Date cannot be in the past.";
             }
 
             if (cboType.SelectedItem?.ToString() == "Temporary" && cboLength.SelectedIndex < 0)
@@ -310,41 +294,66 @@ namespace FM
             txtName.Focus();
         }
 
+        private static string BuildConnStr()
+        {
+            var pwd = Environment.GetEnvironmentVariable("DB_PASSWORD", EnvironmentVariableTarget.User);
+            if (string.IsNullOrWhiteSpace(pwd))
+                throw new InvalidOperationException("DB_PASSWORD environment variable not set for the current user.\nSet it with: setx DB_PASSWORD \"YourPassword\" and restart Visual Studio/your app.");
+
+            var builder = new SqlConnectionStringBuilder
+            {
+                DataSource = "STONEY,1433",
+                InitialCatalog = "Finance_Manager",
+                UserID = "josh",
+                Password = pwd,
+                Encrypt = true,
+                TrustServerCertificate = true
+            };
+
+            return builder.ConnectionString;
+        }
+
         private void CreateAndLoadBillsTable()
         {
-            string cs = "Host=localhost;Database=Finance_Manager;Username=postgres;Password=banana001;SslMode=Disable";
-
-            using var conn = new NpgsqlConnection(cs);
+            using var conn = new SqlConnection(BuildConnStr());
             conn.Open();
 
-            using (var cmd = new NpgsqlCommand(@"
-            CREATE TABLE IF NOT EXISTS bills(
-                billid SERIAL PRIMARY KEY,
-                name TEXT NOT NULL,
-                amount NUMERIC(12,2) NOT NULL,
-                type TEXT,
-                length TEXT,
-                date DATE,
-                description TEXT
-                );", conn))
+            using (var cmd = new SqlCommand(@"
+IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[bills]') AND type = 'U')
+BEGIN
+    CREATE TABLE [dbo].[bills] (
+        billid INT IDENTITY(1,1) PRIMARY KEY,
+        name NVARCHAR(255) NOT NULL,
+        amount DECIMAL(12,2) NOT NULL,
+        type NVARCHAR(100),
+        length NVARCHAR(100),
+        date DATE,
+        description NVARCHAR(MAX)
+    );
+END", conn))
             {
                 cmd.ExecuteNonQuery();
             }
 
-            using (var cmd = new NpgsqlCommand(
-                "INSERT INTO bills(name,amount,type,length,date,description) VALUES(@n,@a,@t,@l,@d,@desc)", conn))
+            using (var cmd = new SqlCommand(
+                "INSERT INTO [dbo].[bills] (name,amount,type,length,date,description) VALUES(@n,@a,@t,@l,@d,@desc)", conn))
             {
-                cmd.Parameters.AddWithValue("@n", txtName.Text);
-                cmd.Parameters.AddWithValue("@a", decimal.Parse(txtAmount.Text));
-                cmd.Parameters.AddWithValue("@t", cboType.SelectedItem?.ToString() ?? "Unknown");
-                cmd.Parameters.AddWithValue("@l", cboLength.Visible ? (cboLength.SelectedItem?.ToString() ?? "Not Sure") : "Not Applicable");
-                cmd.Parameters.AddWithValue("@d", dtpDate.Value.Date);
-                cmd.Parameters.AddWithValue("@desc", txtDescription.Text);
+                cmd.Parameters.Add("@n", SqlDbType.NVarChar, 255).Value = txtName.Text ?? (object)DBNull.Value;
+
+                var pAmt = cmd.Parameters.Add("@a", SqlDbType.Decimal);
+                pAmt.Precision = 12;
+                pAmt.Scale = 2;
+                pAmt.Value = decimal.Parse(txtAmount.Text, CultureInfo.CurrentCulture);
+
+                cmd.Parameters.Add("@t", SqlDbType.NVarChar, 100).Value = (cboType.SelectedItem?.ToString() ?? "Unknown");
+                cmd.Parameters.Add("@l", SqlDbType.NVarChar, 100).Value = (cboLength.Visible ? (cboLength.SelectedItem?.ToString() ?? "Not Sure") : "Not Applicable");
+                cmd.Parameters.Add("@d", SqlDbType.Date).Value = dtpDate.Value.Date;
+                cmd.Parameters.Add("@desc", SqlDbType.NVarChar).Value = txtDescription.Text ?? (object)DBNull.Value;
                 cmd.ExecuteNonQuery();
             }
 
             var dt = new DataTable();
-            using (var cmd = new NpgsqlCommand("SELECT billid,name,amount,date FROM bills ORDER BY date DESC", conn))
+            using (var cmd = new SqlCommand("SELECT billid,name,amount,date FROM [dbo].[bills] ORDER BY date DESC", conn))
             using (var rdr = cmd.ExecuteReader())
                 dt.Load(rdr);
         }

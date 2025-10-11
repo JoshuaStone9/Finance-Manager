@@ -1,5 +1,4 @@
-﻿using Npgsql;
-using NpgsqlTypes;
+﻿using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -25,11 +24,11 @@ namespace FM
         private Label lblCategory;
         private ComboBox cboCategory;
 
-        private Label lblType;          // One-off | Recurring
+        private Label lblType;
         private ComboBox cboType;
 
-        private Label lblFrequency;     // visible only when Recurring
-        private ComboBox cboFrequency;  // Weekly | Monthly | Quarterly | Yearly
+        private Label lblFrequency;
+        private ComboBox cboFrequency;
 
         private Label lblDate;
         private DateTimePicker dtpDate;
@@ -45,8 +44,26 @@ namespace FM
         private Panel bottomPanel;
         private PictureBox logo;
 
-        private const string ConnStr =
-            "Host=localhost;Database=Finance_Manager;Username=postgres;Password=banana001;SslMode=Disable";
+        private static string BuildConnStr()
+        {
+            var pwd = Environment.GetEnvironmentVariable("DB_PASSWORD", EnvironmentVariableTarget.User);
+            if (string.IsNullOrWhiteSpace(pwd))
+                throw new InvalidOperationException(
+                    "DB_PASSWORD environment variable not set for the current user.\n" +
+                    "Set it with: setx DB_PASSWORD \"YourPassword\" and restart Visual Studio/your app.");
+
+            var builder = new SqlConnectionStringBuilder
+            {
+                DataSource = "STONEY,1433",
+                InitialCatalog = "Finance_Manager",
+                UserID = "josh",
+                Password = pwd,
+                Encrypt = true,
+                TrustServerCertificate = true
+            };
+
+            return builder.ConnectionString;
+        }
 
         private sealed class CategoryItem
         {
@@ -58,7 +75,6 @@ namespace FM
 
         public AddExtraExpense()
         {
-            // --- Form (matches your AddBill style) ---
             Text = "Add Extra Expense";
             ClientSize = new Size(560, 620);
             StartPosition = FormStartPosition.CenterScreen;
@@ -68,7 +84,6 @@ namespace FM
 
             SuspendLayout();
 
-            // Optional logo
             logo = new PictureBox
             {
                 Image = Image.FromFile("images/FM_Logo_Main_Menu.png"),
@@ -79,7 +94,6 @@ namespace FM
             };
             Controls.Add(logo);
 
-            // Title
             lblTitle = new Label
             {
                 Text = "Add Extra Expense",
@@ -89,16 +103,13 @@ namespace FM
                 BackColor = Color.Transparent
             };
 
-            // Name (shifted up to occupy former ID space)
             lblName = new Label { Text = "Name", Location = new Point(20, 160), AutoSize = true, BackColor = Color.Transparent, TabIndex = 0 };
             txtName = new TextBox { Location = new Point(160, 156), Width = 330, TabIndex = 1 };
 
-            // Amount
             lblAmount = new Label { Text = "Amount", Location = new Point(20, 200), AutoSize = true, BackColor = Color.Transparent, TabIndex = 2 };
             lblPound = new Label { Text = "£", Location = new Point(160, 200), AutoSize = true, BackColor = Color.Transparent };
             txtAmount = new TextBox { Location = new Point(175, 196), Width = 120, TabIndex = 3 };
 
-            // Category
             lblCategory = new Label { Text = "Category", Location = new Point(20, 240), AutoSize = true, BackColor = Color.Transparent, TabIndex = 4 };
             cboCategory = new ComboBox
             {
@@ -108,7 +119,6 @@ namespace FM
                 TabIndex = 5
             };
 
-            // Type (One-off / Recurring)
             lblType = new Label { Text = "Type", Location = new Point(20, 280), AutoSize = true, BackColor = Color.Transparent, TabIndex = 6 };
             cboType = new ComboBox
             {
@@ -119,7 +129,6 @@ namespace FM
             };
             cboType.Items.AddRange(new object[] { "One-off", "Recurring" });
 
-            // Frequency (only when Recurring)
             lblFrequency = new Label
             {
                 Text = "Frequency",
@@ -139,7 +148,6 @@ namespace FM
             };
             cboFrequency.Items.AddRange(new object[] { "Weekly", "Monthly", "Quarterly", "Yearly" });
 
-            // Date Incurred
             lblDate = new Label { Text = "Date Incurred", Location = new Point(20, 360), AutoSize = true, BackColor = Color.Transparent, TabIndex = 10 };
             dtpDate = new DateTimePicker
             {
@@ -149,7 +157,6 @@ namespace FM
                 TabIndex = 11
             };
 
-            // Notes
             lblNotes = new Label { Text = "Notes", Location = new Point(20, 400), AutoSize = true, BackColor = Color.Transparent, TabIndex = 12 };
             txtNotes = new TextBox
             {
@@ -161,7 +168,6 @@ namespace FM
                 TabIndex = 13
             };
 
-            // Bottom button panel
             bottomPanel = new Panel
             {
                 Dock = DockStyle.Bottom,
@@ -189,11 +195,9 @@ namespace FM
                 bottomPanel
             });
 
-            // Defaults + events
             cboType.SelectedIndex = 0;
             cboType.SelectedIndexChanged += CboType_SelectedIndexChanged;
 
-            // DB init + load categories
             try { EnsureSchemaAndSeedCategories(); }
             catch (Exception ex)
             {
@@ -204,7 +208,6 @@ namespace FM
             ResumeLayout(false);
         }
 
-        // ---- Style helpers (match AddBill) ----
         private Button MakePrimaryButton(string text, Point location, int width, int height, int tabIndex, EventHandler onClick)
         {
             var b = new Button
@@ -241,21 +244,19 @@ namespace FM
             return b;
         }
 
-        // ---- Gradient background ----
         private void AddExtraExpense_Paint(object? sender, PaintEventArgs e)
         {
             using var brush = new LinearGradientBrush(ClientRectangle, Color.LightCoral, Color.White, LinearGradientMode.Vertical);
             e.Graphics.FillRectangle(brush, ClientRectangle);
         }
 
-        // ---- UI logic ----
         private void CboType_SelectedIndexChanged(object? sender, EventArgs e)
         {
             bool recurring = string.Equals(cboType.SelectedItem?.ToString(), "Recurring", StringComparison.OrdinalIgnoreCase);
             lblFrequency.Visible = recurring;
             cboFrequency.Visible = recurring;
             if (recurring && cboFrequency.SelectedIndex < 0)
-                cboFrequency.SelectedIndex = 1; // Monthly
+                cboFrequency.SelectedIndex = 1;
         }
 
         private void BtnSave_Click(object? sender, EventArgs e)
@@ -274,7 +275,6 @@ namespace FM
 
             var rec = new ExtraExpenseRecord
             {
-                // Expense_ID removed
                 Name = txtName.Text.Trim(),
                 Amount = amount,
                 Category = categoryName,
@@ -309,7 +309,6 @@ namespace FM
         private void BtnMainMenu_Click(object? sender, EventArgs e) => Close();
         private void BtnViewAllPayments_Click(object? sender, EventArgs e) => new AllPayments().Show();
 
-        // ---- Validation & helpers (Expense ID references removed) ----
         private string? ValidateInputs(out decimal amount)
         {
             amount = 0m;
@@ -373,57 +372,58 @@ namespace FM
             txtName.Focus();
         }
 
-        // ---- DB (unchanged) ----
         private void EnsureSchemaAndSeedCategories()
         {
-            using var conn = new NpgsqlConnection(ConnStr);
+            using var conn = new SqlConnection(BuildConnStr());
             conn.Open();
 
-            using (var cmd = new NpgsqlCommand(@"
-                CREATE TABLE IF NOT EXISTS categories(
-                    id SERIAL PRIMARY KEY,
-                    name TEXT NOT NULL UNIQUE
-                );
+            using (var cmd = new SqlCommand(@"
+IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[categories]') AND type = 'U')
+BEGIN
+    CREATE TABLE [dbo].[categories] (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        name NVARCHAR(200) NOT NULL UNIQUE
+    );
+END;
 
-                CREATE TABLE IF NOT EXISTS extra_expenses(
-                    extra_expense_id SERIAL PRIMARY KEY,
-                    name   TEXT NOT NULL,
-                    amount NUMERIC(12,2) NOT NULL
-                );", conn))
+IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[extra_expenses]') AND type = 'U')
+BEGIN
+    CREATE TABLE [dbo].[extra_expenses] (
+        extra_expense_id INT IDENTITY(1,1) PRIMARY KEY,
+        name   NVARCHAR(200) NOT NULL,
+        amount DECIMAL(12,2) NOT NULL
+    );
+END;", conn))
             {
                 cmd.ExecuteNonQuery();
             }
 
-            using (var cmd = new NpgsqlCommand(@"
-                ALTER TABLE extra_expenses ADD COLUMN IF NOT EXISTS category_id INT;
-                ALTER TABLE extra_expenses ADD COLUMN IF NOT EXISTS category    TEXT;
-                ALTER TABLE extra_expenses ADD COLUMN IF NOT EXISTS type        TEXT;
-                ALTER TABLE extra_expenses ADD COLUMN IF NOT EXISTS length      TEXT;
-                ALTER TABLE extra_expenses ADD COLUMN IF NOT EXISTS duedate     DATE;
-                ALTER TABLE extra_expenses ADD COLUMN IF NOT EXISTS description TEXT;
-            ", conn))
+            using (var cmd = new SqlCommand(@"
+IF COL_LENGTH('dbo.extra_expenses','category_id') IS NULL
+    ALTER TABLE dbo.extra_expenses ADD category_id INT;
+IF COL_LENGTH('dbo.extra_expenses','category') IS NULL
+    ALTER TABLE dbo.extra_expenses ADD category NVARCHAR(200);
+IF COL_LENGTH('dbo.extra_expenses','type') IS NULL
+    ALTER TABLE dbo.extra_expenses ADD type NVARCHAR(100);
+IF COL_LENGTH('dbo.extra_expenses','length') IS NULL
+    ALTER TABLE dbo.extra_expenses ADD length NVARCHAR(100);
+IF COL_LENGTH('dbo.extra_expenses','duedate') IS NULL
+    ALTER TABLE dbo.extra_expenses ADD duedate DATE;
+IF COL_LENGTH('dbo.extra_expenses','description') IS NULL
+    ALTER TABLE dbo.extra_expenses ADD description NVARCHAR(MAX);
+", conn))
             {
                 cmd.ExecuteNonQuery();
             }
 
-            using (var cmd = new NpgsqlCommand(@"
-                DO $$
-                BEGIN
-                    IF NOT EXISTS (
-                        SELECT 1 FROM information_schema.table_constraints
-                        WHERE table_name = 'extra_expenses'
-                          AND constraint_type = 'FOREIGN KEY'
-                          AND constraint_name = 'extra_expenses_category_id_fkey'
-                    ) THEN
-                        ALTER TABLE extra_expenses
-                        ADD CONSTRAINT extra_expenses_category_id_fkey
-                        FOREIGN KEY (category_id) REFERENCES categories(id);
-                    END IF;
-                EXCEPTION WHEN others THEN
-                    NULL;
-                END $$;", conn))
+            using (var cmd = new SqlCommand(@"
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_extra_expenses_categories')
+BEGIN
+    ALTER TABLE dbo.extra_expenses
+    ADD CONSTRAINT FK_extra_expenses_categories FOREIGN KEY (category_id) REFERENCES dbo.categories(id);
+END;", conn))
             {
-                cmd.ExecuteNonQuery();
+                try { cmd.ExecuteNonQuery(); } catch { }
             }
 
             string[] categories = {
@@ -436,33 +436,33 @@ namespace FM
             {
                 foreach (var c in categories)
                 {
-                    using var upsert = new NpgsqlCommand(
-                        "INSERT INTO categories(name) VALUES (@name) ON CONFLICT (name) DO NOTHING;", conn, tx);
-                    upsert.Parameters.AddWithValue("@name", NpgsqlDbType.Text, c);
+                    using var upsert = new SqlCommand(
+                        "IF NOT EXISTS (SELECT 1 FROM dbo.categories WHERE name = @name) INSERT INTO dbo.categories(name) VALUES(@name);",
+                        conn, tx);
+                    upsert.Parameters.Add("@name", SqlDbType.NVarChar, 200).Value = c;
                     upsert.ExecuteNonQuery();
                 }
                 tx.Commit();
             }
 
-            using (var cmd = new NpgsqlCommand(@"
-                UPDATE extra_expenses e
-                SET category_id = c.id
-                FROM categories c
-                WHERE e.category_id IS NULL
-                  AND e.category IS NOT NULL
-                  AND lower(e.category) = lower(c.name);
+            using (var cmd = new SqlCommand(@"
+UPDATE e
+SET category_id = c.id
+FROM dbo.extra_expenses e
+JOIN dbo.categories c ON lower(e.category) = lower(c.name)
+WHERE e.category_id IS NULL AND e.category IS NOT NULL AND e.category <> '';
 
-                UPDATE extra_expenses e
-                SET category = c.name
-                FROM categories c
-                WHERE (e.category IS NULL OR e.category = '')
-                  AND e.category_id = c.id;", conn))
+UPDATE e
+SET category = c.name
+FROM dbo.extra_expenses e
+JOIN dbo.categories c ON e.category_id = c.id
+WHERE (e.category IS NULL OR e.category = '');", conn))
             {
                 cmd.ExecuteNonQuery();
             }
 
             var list = new List<CategoryItem>();
-            using (var cmd = new NpgsqlCommand("SELECT id, name FROM categories ORDER BY name;", conn))
+            using (var cmd = new SqlCommand("SELECT id, name FROM dbo.categories ORDER BY name;", conn))
             using (var rdr = cmd.ExecuteReader())
             {
                 while (rdr.Read())
@@ -480,31 +480,32 @@ namespace FM
 
         private void InsertExtraExpenseToDb(ExtraExpenseRecord rec, int categoryId, string categoryName)
         {
-            using var conn = new NpgsqlConnection(ConnStr);
+            using var conn = new SqlConnection(BuildConnStr());
             conn.Open();
 
-            using var cmd = new NpgsqlCommand(@"
-                INSERT INTO extra_expenses
-                    (name, amount, category_id, category, type, length, duedate, description)
-                VALUES
-                    (@n,   @a,     @cat_id,    @cat,     @type, @freq,  @d,     @desc);", conn);
+            using var cmd = new SqlCommand(@"
+INSERT INTO dbo.extra_expenses
+    (name, amount, category_id, category, type, length, duedate, description)
+VALUES
+    (@n,   @a,     @cat_id,    @cat,     @type, @freq,  @d,     @desc);", conn);
 
-            cmd.Parameters.AddWithValue("@n", NpgsqlDbType.Text, rec.Name);
-            cmd.Parameters.AddWithValue("@a", NpgsqlDbType.Numeric, rec.Amount);
-            cmd.Parameters.AddWithValue("@cat_id", NpgsqlDbType.Integer, categoryId);
-            cmd.Parameters.AddWithValue("@cat", NpgsqlDbType.Text, categoryName);
-            cmd.Parameters.AddWithValue("@type", NpgsqlDbType.Text, rec.Type);
+            cmd.Parameters.Add("@n", SqlDbType.NVarChar, 200).Value = rec.Name ?? (object)DBNull.Value;
+
+            var pAmt = cmd.Parameters.Add("@a", SqlDbType.Decimal);
+            pAmt.Precision = 12; pAmt.Scale = 2;
+            pAmt.Value = rec.Amount;
+
+            cmd.Parameters.Add("@cat_id", SqlDbType.Int).Value = categoryId;
+            cmd.Parameters.Add("@cat", SqlDbType.NVarChar, 200).Value = categoryName ?? (object)DBNull.Value;
+            cmd.Parameters.Add("@type", SqlDbType.NVarChar, 100).Value = rec.Type ?? (object)DBNull.Value;
 
             if (string.Equals(rec.Type, "Recurring", StringComparison.OrdinalIgnoreCase))
-                cmd.Parameters.AddWithValue("@freq", NpgsqlDbType.Text, rec.Frequency);
+                cmd.Parameters.Add("@freq", SqlDbType.NVarChar, 100).Value = rec.Frequency ?? (object)DBNull.Value;
             else
-                cmd.Parameters.AddWithValue("@freq", DBNull.Value);
+                cmd.Parameters.Add("@freq", SqlDbType.NVarChar, 100).Value = (object)DBNull.Value;
 
-            cmd.Parameters.AddWithValue("@d", NpgsqlDbType.Date, rec.DateIncurred);
-            if (string.IsNullOrWhiteSpace(rec.Notes))
-                cmd.Parameters.AddWithValue("@desc", DBNull.Value);
-            else
-                cmd.Parameters.AddWithValue("@desc", NpgsqlDbType.Text, rec.Notes);
+            cmd.Parameters.Add("@d", SqlDbType.Date).Value = rec.DateIncurred;
+            cmd.Parameters.Add("@desc", SqlDbType.NVarChar).Value = string.IsNullOrWhiteSpace(rec.Notes) ? (object)DBNull.Value : rec.Notes;
 
             cmd.ExecuteNonQuery();
         }

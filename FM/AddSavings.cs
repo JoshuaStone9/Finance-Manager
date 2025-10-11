@@ -1,5 +1,4 @@
-﻿using Npgsql;
-using NpgsqlTypes;
+﻿using Microsoft.Data.SqlClient;
 using System;
 using System.Data;
 using System.Drawing;
@@ -37,20 +36,29 @@ namespace FM
         private Panel bottomPanel;
         private PictureBox logo;
 
-        private const string ConnStr =
-            "Host=localhost;Database=Finance_Manager;Username=postgres;Password=banana001;SslMode=Disable";
-
-        private sealed class CategoryItem
+        private static string BuildConnStr()
         {
-            public int Id { get; }
-            public string Name { get; }
-            public CategoryItem(int id, string name) { Id = id; Name = name; }
-            public override string ToString() => Name;
+            var pwd = Environment.GetEnvironmentVariable("DB_PASSWORD", EnvironmentVariableTarget.User);
+            if (string.IsNullOrWhiteSpace(pwd))
+                throw new InvalidOperationException(
+                    "DB_PASSWORD environment variable not set for the current user.\n" +
+                    "Set it with: setx DB_PASSWORD \"YourPassword\" and restart Visual Studio/your app.");
+
+            var builder = new SqlConnectionStringBuilder
+            {
+                DataSource = "STONEY,1433",
+                InitialCatalog = "Finance_Manager",
+                UserID = "josh",
+                Password = pwd,
+                Encrypt = true,
+                TrustServerCertificate = true
+            };
+
+            return builder.ConnectionString;
         }
 
         public AddSavings()
         {
-            // ---- Form styling to match the app ----
             Text = "Add Savings";
             ClientSize = new Size(560, 620);
             StartPosition = FormStartPosition.CenterScreen;
@@ -60,7 +68,6 @@ namespace FM
 
             SuspendLayout();
 
-            // (Optional) top-center logo
             logo = new PictureBox
             {
                 Image = Image.FromFile("images/FM_Logo_Main_Menu.png"),
@@ -71,7 +78,6 @@ namespace FM
             };
             Controls.Add(logo);
 
-            // Title
             lblTitle = new Label
             {
                 Text = "Add Savings",
@@ -81,16 +87,13 @@ namespace FM
                 BackColor = Color.Transparent
             };
 
-            // Name
             lblName = new Label { Text = "Name", Location = new Point(20, 160), AutoSize = true, BackColor = Color.Transparent, TabIndex = 0 };
             txtName = new TextBox { Location = new Point(160, 156), Width = 330, TabIndex = 1 };
 
-            // Amount
             lblAmount = new Label { Text = "Amount", Location = new Point(20, 200), AutoSize = true, BackColor = Color.Transparent, TabIndex = 2 };
             lblPound = new Label { Text = "£", Location = new Point(160, 200), AutoSize = true, BackColor = Color.Transparent };
             txtAmount = new TextBox { Location = new Point(175, 196), Width = 120, TabIndex = 3 };
 
-            // Length
             lblLength = new Label { Text = "Length", Location = new Point(20, 240), AutoSize = true, BackColor = Color.Transparent, TabIndex = 4 };
             cboLength = new ComboBox
             {
@@ -101,7 +104,6 @@ namespace FM
             };
             cboLength.Items.AddRange(new object[] { "Daily", "Weekly", "Monthly", "Quarterly", "Yearly" });
 
-            // Date
             lblDate = new Label { Text = "Date", Location = new Point(20, 280), AutoSize = true, BackColor = Color.Transparent, TabIndex = 6 };
             dtpDate = new DateTimePicker
             {
@@ -111,7 +113,6 @@ namespace FM
                 TabIndex = 7
             };
 
-            // Notes
             lblNotes = new Label { Text = "Notes", Location = new Point(20, 320), AutoSize = true, BackColor = Color.Transparent, TabIndex = 8 };
             txtNotes = new TextBox
             {
@@ -123,7 +124,6 @@ namespace FM
                 TabIndex = 9
             };
 
-            // Bottom button panel (transparent to show gradient)
             bottomPanel = new Panel
             {
                 Dock = DockStyle.Bottom,
@@ -149,13 +149,11 @@ namespace FM
                 bottomPanel
             });
 
-            // Optional: ensure schema (safe, but CreateInsertAndLoadSavings also ensures)
-            try { EnsureSchemaAndSeedCategories(); } catch { /* no-op */ }
+            try { EnsureSchemaAndSeedCategories(); } catch { }
 
             ResumeLayout(false);
         }
 
-        // ---- Button style helpers (soft red + black border) ----
         private Button MakePrimaryButton(string text, Point location, int width, int height, int tabIndex, EventHandler onClick)
         {
             var b = new Button
@@ -192,14 +190,12 @@ namespace FM
             return b;
         }
 
-        // ---- Gradient background (LightCoral -> White) ----
         private void AddSavings_Paint(object? sender, PaintEventArgs e)
         {
             using var brush = new LinearGradientBrush(ClientRectangle, Color.LightCoral, Color.White, LinearGradientMode.Vertical);
             e.Graphics.FillRectangle(brush, ClientRectangle);
         }
 
-        // ---- Events ----
         private void BtnSave_Click(object? sender, EventArgs e)
         {
             ResetFieldBackColors();
@@ -222,15 +218,12 @@ namespace FM
 
             try
             {
-                // Create table (if missing), insert, and load latest data back
                 var dt = CreateInsertAndLoadSavings(rec);
 
-                // Keep your in-memory store if you use it elsewhere
                 SavingsStore.Savings.Add(rec);
 
                 MessageBox.Show("Savings saved.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                // If you have a grid to show savings elsewhere, you can bind 'dt' there.
                 ClearFormForNext();
             }
             catch (Exception ex)
@@ -242,15 +235,12 @@ namespace FM
 
         private void BtnViewSavings_Click(object? sender, EventArgs e)
         {
-            // TODO: open your Savings list form when ready
-            // new SavingsListForm().Show();
         }
 
         private void BtnMainMenu_Click(object? sender, EventArgs e) => Close();
 
         private void BtnViewAllPayments_Click(object? sender, EventArgs e) => new AllPayments().Show();
 
-        // ---- Validation & helpers ----
         private string? ValidateInputs(out decimal amount)
         {
             amount = 0m;
@@ -300,81 +290,79 @@ namespace FM
             txtName.Focus();
         }
 
-        // ---- DB schema helper (optional; CreateInsertAndLoadSavings also ensures) ----
         private void EnsureSchemaAndSeedCategories()
         {
-            using var conn = new NpgsqlConnection(ConnStr);
+            using var conn = new SqlConnection(BuildConnStr());
             conn.Open();
 
-            using (var cmd = new NpgsqlCommand(@"
-                CREATE TABLE IF NOT EXISTS savings(
-                    savings_id SERIAL PRIMARY KEY,
-                    name   TEXT NOT NULL,
-                    amount NUMERIC(12,2) NOT NULL
-                );", conn))
-            {
-                cmd.ExecuteNonQuery();
-            }
-
-            using (var cmd = new NpgsqlCommand(@"
-                ALTER TABLE savings ADD COLUMN IF NOT EXISTS length TEXT;
-                ALTER TABLE savings ADD COLUMN IF NOT EXISTS ""date"" DATE;
-                ALTER TABLE savings ADD COLUMN IF NOT EXISTS notes  TEXT;
-            ", conn))
+            using (var cmd = new SqlCommand(@"
+IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[savings]') AND type = 'U')
+BEGIN
+    CREATE TABLE [dbo].[savings](
+        savings_id INT IDENTITY(1,1) PRIMARY KEY,
+        name NVARCHAR(200) NOT NULL,
+        amount DECIMAL(12,2) NOT NULL,
+        [length] NVARCHAR(50) NULL,
+        [date] DATE NULL,
+        notes NVARCHAR(MAX) NULL
+    );
+END;", conn))
             {
                 cmd.ExecuteNonQuery();
             }
         }
 
-        // ---- Refactored create/insert/load (quotes ""date"" for safety) ----
         private DataTable CreateInsertAndLoadSavings(SavingsRecord rec)
         {
-            using var conn = new NpgsqlConnection(ConnStr);
+            using var conn = new SqlConnection(BuildConnStr());
             conn.Open();
 
-            // Ensure table exists
-            using (var cmd = new NpgsqlCommand(@"
-                CREATE TABLE IF NOT EXISTS savings(
-                    savings_id SERIAL PRIMARY KEY,
-                    name   TEXT NOT NULL,
-                    amount NUMERIC(12,2) NOT NULL,
-                    length TEXT,
-                    ""date"" DATE,
-                    notes  TEXT
-                );", conn))
+            using (var cmd = new SqlCommand(@"
+IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[savings]') AND type = 'U')
+BEGIN
+    CREATE TABLE [dbo].[savings](
+        savings_id INT IDENTITY(1,1) PRIMARY KEY,
+        name NVARCHAR(200) NOT NULL,
+        amount DECIMAL(12,2) NOT NULL,
+        [length] NVARCHAR(50) NULL,
+        [date] DATE NULL,
+        notes NVARCHAR(MAX) NULL
+    );
+END;", conn))
             {
                 cmd.ExecuteNonQuery();
             }
 
-            // Ensure columns exist (idempotent)
-            using (var cmd = new NpgsqlCommand(@"
-                ALTER TABLE savings
-                    ADD COLUMN IF NOT EXISTS length TEXT,
-                    ADD COLUMN IF NOT EXISTS ""date"" DATE,
-                    ADD COLUMN IF NOT EXISTS notes  TEXT;", conn))
+            using (var cmd = new SqlCommand(@"
+IF COL_LENGTH('dbo.savings','length') IS NULL
+    ALTER TABLE dbo.savings ADD [length] NVARCHAR(50);
+IF COL_LENGTH('dbo.savings','date') IS NULL
+    ALTER TABLE dbo.savings ADD [date] DATE;
+IF COL_LENGTH('dbo.savings','notes') IS NULL
+    ALTER TABLE dbo.savings ADD notes NVARCHAR(MAX);", conn))
             {
                 cmd.ExecuteNonQuery();
             }
 
-            // Insert the record
-            using (var cmd = new NpgsqlCommand(@"
-                INSERT INTO savings (name, amount, length, ""date"", notes)
-                VALUES (@n, @a, @l, @d, @not);", conn))
+            using (var cmd = new SqlCommand(@"
+INSERT INTO dbo.savings (name, amount, [length], [date], notes)
+VALUES (@n, @a, @l, @d, @not);", conn))
             {
-                cmd.Parameters.AddWithValue("@n", NpgsqlDbType.Text, rec.Name);
-                cmd.Parameters.AddWithValue("@a", NpgsqlDbType.Numeric, rec.Amount);
-                cmd.Parameters.AddWithValue("@l", NpgsqlDbType.Text, (object?)rec.Length ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@d", NpgsqlDbType.Date, rec.Date);
-                cmd.Parameters.AddWithValue("@not", NpgsqlDbType.Text, string.IsNullOrWhiteSpace(rec.Notes) ? (object)DBNull.Value : rec.Notes);
+                cmd.Parameters.Add("@n", SqlDbType.NVarChar, 200).Value = rec.Name ?? (object)DBNull.Value;
+
+                var pAmt = cmd.Parameters.Add("@a", SqlDbType.Decimal);
+                pAmt.Precision = 12; pAmt.Scale = 2;
+                pAmt.Value = rec.Amount;
+
+                cmd.Parameters.Add("@l", SqlDbType.NVarChar, 50).Value = string.IsNullOrWhiteSpace(rec.Length) ? (object)DBNull.Value : rec.Length;
+                cmd.Parameters.Add("@d", SqlDbType.Date).Value = rec.Date;
+                cmd.Parameters.Add("@not", SqlDbType.NVarChar).Value = string.IsNullOrWhiteSpace(rec.Notes) ? (object)DBNull.Value : rec.Notes;
+
                 cmd.ExecuteNonQuery();
             }
 
-            // Load back
             var dt = new DataTable();
-            using (var cmd = new NpgsqlCommand(
-                @"SELECT savings_id, name, amount, ""date"" AS date
-                  FROM savings
-                  ORDER BY ""date"" DESC;", conn))
+            using (var cmd = new SqlCommand("SELECT savings_id, name, amount, [date] FROM dbo.savings ORDER BY [date] DESC;", conn))
             using (var rdr = cmd.ExecuteReader())
                 dt.Load(rdr);
 
