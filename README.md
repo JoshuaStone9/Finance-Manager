@@ -1,1 +1,2 @@
 
+I have designed a finance manager in which assists users in everyday life, their are multiple features in which can assist users in how to manage their money and easily track what they are spending and could potentially save. This is a project which is I am currently still working on to make better and adapt to the modern world. I feel very passionate about this project as I feel my ideas in which are introduced throughout the project will impact users everyday life in a very positive way.
