@@ -10,7 +10,7 @@ using System.Windows.Forms;
 
 namespace FM
 {
-    public partial class AllPayments : Form
+    public partial class AddMoney : Form
     {
         private static string BuildConnStr()
         {
@@ -22,7 +22,7 @@ namespace FM
 
             var builder = new SqlConnectionStringBuilder
             {
-                DataSource = "STONEY,1433", 
+                DataSource = "STONEY,1433",
                 InitialCatalog = "Finance_Manager",
                 UserID = "josh",
                 Password = pwd,
@@ -33,10 +33,7 @@ namespace FM
             return builder.ConnectionString;
         }
 
-        private readonly DataGridView gridBills = new() { ReadOnly = true };
-        private readonly DataGridView gridExpenses = new() { ReadOnly = true };
-        private readonly DataGridView gridInvestments = new() { ReadOnly = true };
-        private readonly DataGridView gridSavings = new() { ReadOnly = true };
+        private readonly DataGridView gridExtraMoney = new() { ReadOnly = true };
 
         private TextBox txtGrandTotal;
         private Label lblGrandTotal;
@@ -54,19 +51,19 @@ namespace FM
         private Button btnEditSelected;
         private Button btnDeleteSelected;
 
-        public AllPayments()
+        public AddMoney()
         {
             InitializeComponent();
 
-            Text = "All Payments";
+            Text = "Add Money";
             ClientSize = new Size(1200, 1060);
             StartPosition = FormStartPosition.CenterScreen;
             DoubleBuffered = true;
             Font = new Font("Montserrat", 10, FontStyle.Regular);
-            Paint += AllPayments_Paint;
+            Paint += AddMoney_Paint;
 
             BuildUi();
-            Load += AllPayments_Load;
+            Load += AddMoney_Load;
         }
 
         private void BuildUi()
@@ -86,7 +83,7 @@ namespace FM
 
             title = new Label
             {
-                Text = "All Payments",
+                Text = "Add Money",
                 Font = new Font("Montserrat", 14F, FontStyle.Bold),
                 AutoSize = true,
                 BackColor = Color.Transparent,
@@ -97,9 +94,9 @@ namespace FM
             btnReload = MakePrimaryButton("Reload", new Point(16, 150), new Size(140, 40), (s, e) => ReloadAll());
             Controls.Add(btnReload);
 
- 
-            btnEditSelected = MakeSecondaryButton("Edit Selected", new Point(168, 150), new Size(140, 40), (s, e) => EditSelected());
-            btnDeleteSelected = MakeSecondaryButton("Delete Selected", new Point(320, 150), new Size(140, 40), (s, e) => DeleteSelected());
+
+            //btnEditSelected = MakeSecondaryButton("Edit Selected", new Point(168, 150), new Size(140, 40), (s, e) => EditSelected());
+            //btnDeleteSelected = MakeSecondaryButton("Delete Selected", new Point(320, 150), new Size(140, 40), (s, e) => DeleteSelected());
             Controls.Add(btnEditSelected);
             Controls.Add(btnDeleteSelected);
 
@@ -107,12 +104,7 @@ namespace FM
             int left = 16;
             int width = ClientSize.Width - 32;
 
-            SetupGrid(gridBills, "Bills", new Point(left, 200), width, 200);
-            SetupGrid(gridExpenses, "Extra Expenses", new Point(left, 420), width, 200);
-            SetupGrid(gridInvestments, "Investments", new Point(left, 640), width, 160);
-            SetupGrid(gridSavings, "Savings", new Point(left, 800), width, 200);
 
-            Controls.AddRange(new Control[] { gridBills, gridExpenses, gridInvestments, gridSavings });
 
 
             bottomPanel = new Panel
@@ -269,7 +261,8 @@ namespace FM
             }
         }
 
-        private void EditMonthlyAllowance_click(object? sender, EventArgs e) {
+        private void EditMonthlyAllowance_click(object? sender, EventArgs e)
+        {
             string input = Microsoft.VisualBasic.Interaction.InputBox("Enter new monthly allowance amount:", "Edit Monthly Allowance", txtMonthlyAllowance.Text);
             if (decimal.TryParse(input, NumberStyles.Number, CultureInfo.CurrentCulture, out var newAmount))
             {
@@ -349,134 +342,37 @@ namespace FM
             grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.Black;
             grid.ColumnHeadersDefaultCellStyle.Font = new Font(Font, FontStyle.Bold);
 
- 
+
             grid.DataBindingComplete += (s, e) => { FormatGrid(grid); UpdateTotal(); };
             grid.CellValueChanged += (s, e) => UpdateTotal();
             grid.RowsRemoved += (s, e) => UpdateTotal();
 
 
-            AttachSingleSelectionBehavior(grid);
         }
 
 
-        private void AttachSingleSelectionBehavior(DataGridView sourceGrid)
-        {
-
-            sourceGrid.MultiSelect = false;
-            sourceGrid.ClearSelection();
-
-            sourceGrid.SelectionChanged += (s, e) =>
-            {
-                try
-                {
-
-                    if (sourceGrid.SelectedRows.Count > 0)
-                    {
-                        if (!ReferenceEquals(sourceGrid, gridBills)) gridBills.ClearSelection();
-                        if (!ReferenceEquals(sourceGrid, gridExpenses)) gridExpenses.ClearSelection();
-                        if (!ReferenceEquals(sourceGrid, gridInvestments)) gridInvestments.ClearSelection();
-                        if (!ReferenceEquals(sourceGrid, gridSavings)) gridSavings.ClearSelection();
-                    }
-                }
-                catch
-                {
-
-                }
-            };
-        }
+        
 
 
-        private void AllPayments_Load(object? sender, EventArgs e)
+        private void AddMoney_Load(object? sender, EventArgs e)
         {
             ReloadAll();
         }
 
         private void ReloadAll()
         {
-            BillsDataGrid();
-            ExtraExpenseDataGrid();
-            InvestmentsDataGrid();
-            SavingsDataGrid();
-            UpdateTotal();
+
         }
 
 
-        private void AllPayments_Paint(object? sender, PaintEventArgs e)
+        private void AddMoney_Paint(object? sender, PaintEventArgs e)
         {
             using var brush = new LinearGradientBrush(ClientRectangle, Color.LightCoral, Color.White, LinearGradientMode.Vertical);
             e.Graphics.FillRectangle(brush, ClientRectangle);
         }
-        private void BillsDataGrid()
-        {
-            try
-            {
-                using var con = new SqlConnection(BuildConnStr());
-                con.Open();
-                string query = "SELECT billid, name, amount, [date], type, length, description FROM dbo.bills ORDER BY [date] DESC";
-                var da = new SqlDataAdapter(query, con);
-                var dt = new DataTable();
-                da.Fill(dt);
-                gridBills.DataSource = dt;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Bills error: " + ex.Message);
-            }
-        }
+        
 
-        private void InvestmentsDataGrid()
-        {
-            try
-            {
-                using var con = new SqlConnection(BuildConnStr());
-                con.Open();
-                string query = "SELECT investments_id, name, amount, [date], category, length, notes FROM dbo.investments ORDER BY [date] DESC";
-                var da = new SqlDataAdapter(query, con);
-                var dt = new DataTable();
-                da.Fill(dt);
-                gridInvestments.DataSource = dt;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Investments error: " + ex.Message);
-            }
-        }
-
-        private void ExtraExpenseDataGrid()
-        {
-            try
-            {
-                using var con = new SqlConnection(BuildConnStr());
-                con.Open();
-                string query = "SELECT extra_expense_id, name, amount, duedate AS [date], category, type, length, description FROM dbo.extra_expenses ORDER BY duedate DESC";
-                var da = new SqlDataAdapter(query, con);
-                var dt = new DataTable();
-                da.Fill(dt);
-                gridExpenses.DataSource = dt;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Extra expenses error: " + ex.Message);
-            }
-        }
-
-        private void SavingsDataGrid()
-        {
-            try
-            {
-                using var con = new SqlConnection(BuildConnStr());
-                con.Open();
-                string query = "SELECT savings_id, name, amount, length, [date], notes FROM dbo.savings ORDER BY [date] DESC";
-                var da = new SqlDataAdapter(query, con);
-                var dt = new DataTable();
-                da.Fill(dt);
-                gridSavings.DataSource = dt;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Savings error: " + ex.Message);
-            }
-        }
+        
 
 
         private void FormatGrid(DataGridView grid)
@@ -500,9 +396,9 @@ namespace FM
         {
             decimal total = 0m;
 
-            total += SumAmountColumn(gridBills);
-            total += SumAmountColumn(gridExpenses);
-            total += SumAmountColumn(gridInvestments);
+            //total += SumAmountColumn(gridBills);
+            //total += SumAmountColumn(gridExpenses);
+            //total += SumAmountColumn(gridInvestments);
 
             if (txtGrandTotal != null)
                 txtGrandTotal.Text = total.ToString("C", CultureInfo.GetCultureInfo("en-GB"));
@@ -527,169 +423,169 @@ namespace FM
             return sum;
         }
 
-        private DataGridView? GetActiveGridWithSelection()
-        {
-            if (gridBills.SelectedRows.Count > 0) return gridBills;
-            if (gridExpenses.SelectedRows.Count > 0) return gridExpenses;
-            if (gridInvestments.SelectedRows.Count > 0) return gridInvestments;
-            if (gridSavings.SelectedRows.Count > 0) return gridSavings;
-            return null;
-        }
+        //private DataGridView? GetActiveGridWithSelection()
+        //{
+        //    if (gridBills.SelectedRows.Count > 0) return gridBills;
+        //    if (gridExpenses.SelectedRows.Count > 0) return gridExpenses;
+        //    if (gridInvestments.SelectedRows.Count > 0) return gridInvestments;
+        //    if (gridSavings.SelectedRows.Count > 0) return gridSavings;
+        //    return null;
+        //}
 
-        private string GetTableNameForGrid(DataGridView grid)
-        {
-            if (grid == gridBills) return "bills";
-            if (grid == gridExpenses) return "extra_expenses";
-            if (grid == gridInvestments) return "investments";
-            if (grid == gridSavings) return "savings";
-            return string.Empty;
-        }
+        //private string GetTableNameForGrid(DataGridView grid)
+        //{
+        //    if (grid == gridBills) return "bills";
+        //    if (grid == gridExpenses) return "extra_expenses";
+        //    if (grid == gridInvestments) return "investments";
+        //    if (grid == gridSavings) return "savings";
+        //    return string.Empty;
+        //}
 
-        private string GetPrimaryKeyColumnForGrid(DataGridView grid)
-        {
-            if (grid.Columns.Contains("billid")) return "billid";
-            if (grid.Columns.Contains("extra_expense_id")) return "extra_expense_id";
-            if (grid.Columns.Contains("investments_id")) return "investments_id";
-            if (grid.Columns.Contains("savings_id")) return "savings_id";
-            // fallbacks
-            if (grid == gridBills) return "billid";
-            if (grid == gridExpenses) return "extra_expense_id";
-            if (grid == gridInvestments) return "investments_id";
-            if (grid == gridSavings) return "savings_id";
-            return string.Empty;
-        }
+        //private string GetPrimaryKeyColumnForGrid(DataGridView grid)
+        //{
+        //    if (grid.Columns.Contains("billid")) return "billid";
+        //    if (grid.Columns.Contains("extra_expense_id")) return "extra_expense_id";
+        //    if (grid.Columns.Contains("investments_id")) return "investments_id";
+        //    if (grid.Columns.Contains("savings_id")) return "savings_id";
+        //    // fallbacks
+        //    if (grid == gridBills) return "billid";
+        //    if (grid == gridExpenses) return "extra_expense_id";
+        //    if (grid == gridInvestments) return "investments_id";
+        //    if (grid == gridSavings) return "savings_id";
+        //    return string.Empty;
+        //}
 
-        private void DeleteSelected()
-        {
-            var grid = GetActiveGridWithSelection();
-            if (grid == null)
-            {
-                MessageBox.Show("Select a row in one of the grids first.", "No selection", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+        //private void DeleteSelected()
+        //{
+        //    var grid = GetActiveGridWithSelection();
+        //    if (grid == null)
+        //    {
+        //        MessageBox.Show("Select a row in one of the grids first.", "No selection", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        //        return;
+        //    }
 
-            string table = GetTableNameForGrid(grid);
-            string pk = GetPrimaryKeyColumnForGrid(grid);
-            if (string.IsNullOrEmpty(table) || string.IsNullOrEmpty(pk))
-            {
-                MessageBox.Show("Could not determine table/primary key for the selected grid.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
+        //    string table = GetTableNameForGrid(grid);
+        //    string pk = GetPrimaryKeyColumnForGrid(grid);
+        //    if (string.IsNullOrEmpty(table) || string.IsNullOrEmpty(pk))
+        //    {
+        //        MessageBox.Show("Could not determine table/primary key for the selected grid.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //        return;
+        //    }
 
 
-            var ids = grid.SelectedRows
-                .Cast<DataGridViewRow>()
-                .Select(r =>
-                {
-                    var v = r.Cells[pk].Value;
-                    if (v == null || v == DBNull.Value) return (int?)null;
-                    try { return Convert.ToInt32(v); } catch { return (int?)null; }
-                })
-                .Where(x => x.HasValue)
-                .Select(x => x!.Value)
-                .Distinct()
-                .ToList();
+        //    var ids = grid.SelectedRows
+        //        .Cast<DataGridViewRow>()
+        //        .Select(r =>
+        //        {
+        //            var v = r.Cells[pk].Value;
+        //            if (v == null || v == DBNull.Value) return (int?)null;
+        //            try { return Convert.ToInt32(v); } catch { return (int?)null; }
+        //        })
+        //        .Where(x => x.HasValue)
+        //        .Select(x => x!.Value)
+        //        .Distinct()
+        //        .ToList();
 
-            if (ids.Count == 0)
-            {
-                MessageBox.Show("Selected row(s) do not contain primary key values.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
+        //    if (ids.Count == 0)
+        //    {
+        //        MessageBox.Show("Selected row(s) do not contain primary key values.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //        return;
+        //    }
 
-            if (MessageBox.Show($"Are you sure you want to permanently delete {ids.Count} record(s)?", "Confirm delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
-                return;
+        //    if (MessageBox.Show($"Are you sure you want to permanently delete {ids.Count} record(s)?", "Confirm delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+        //        return;
 
-            try
-            {
-                using var con = new SqlConnection(BuildConnStr());
-                con.Open();
-                using var tx = con.BeginTransaction();
-                using var cmd = con.CreateCommand();
-                cmd.Transaction = tx;
+        //    try
+        //    {
+        //        using var con = new SqlConnection(BuildConnStr());
+        //        con.Open();
+        //        using var tx = con.BeginTransaction();
+        //        using var cmd = con.CreateCommand();
+        //        cmd.Transaction = tx;
 
-                var paramNames = ids.Select((id, idx) => "@id" + idx).ToArray();
-                cmd.CommandText = $"DELETE FROM dbo.[{table}] WHERE {pk} IN ({string.Join(", ", paramNames)})";
+        //        var paramNames = ids.Select((id, idx) => "@id" + idx).ToArray();
+        //        cmd.CommandText = $"DELETE FROM dbo.[{table}] WHERE {pk} IN ({string.Join(", ", paramNames)})";
 
-                for (int i = 0; i < ids.Count; i++)
-                    cmd.Parameters.AddWithValue(paramNames[i], ids[i]);
+        //        for (int i = 0; i < ids.Count; i++)
+        //            cmd.Parameters.AddWithValue(paramNames[i], ids[i]);
 
-                int rows = cmd.ExecuteNonQuery();
-                tx.Commit();
+        //        int rows = cmd.ExecuteNonQuery();
+        //        tx.Commit();
 
-                MessageBox.Show(rows > 0 ? $"Deleted {rows} row(s)." : "No rows deleted.", "Delete", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                ReloadAll();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Delete failed: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
+        //        MessageBox.Show(rows > 0 ? $"Deleted {rows} row(s)." : "No rows deleted.", "Delete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        //        ReloadAll();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show("Delete failed: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //    }
+        //}
 
-        private void EditSelected()
-        {
-            var grid = GetActiveGridWithSelection();
-            if (grid == null)
-            {
-                MessageBox.Show("Select a row in one of the grids first.", "No selection", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+        //private void EditSelected()
+        //{
+        //    var grid = GetActiveGridWithSelection();
+        //    if (grid == null)
+        //    {
+        //        MessageBox.Show("Select a row in one of the grids first.", "No selection", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        //        return;
+        //    }
 
-            string table = GetTableNameForGrid(grid);
-            string pk = GetPrimaryKeyColumnForGrid(grid);
-            if (string.IsNullOrEmpty(table) || string.IsNullOrEmpty(pk))
-            {
-                MessageBox.Show("Could not determine table/primary key for the selected grid.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
+        //    string table = GetTableNameForGrid(grid);
+        //    string pk = GetPrimaryKeyColumnForGrid(grid);
+        //    if (string.IsNullOrEmpty(table) || string.IsNullOrEmpty(pk))
+        //    {
+        //        MessageBox.Show("Could not determine table/primary key for the selected grid.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //        return;
+        //    }
 
-            var row = grid.SelectedRows[0];
-            var idVal = row.Cells[pk].Value;
-            if (idVal == null)
-            {
-                MessageBox.Show("Selected row does not contain a primary key value.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
+        //    var row = grid.SelectedRows[0];
+        //    var idVal = row.Cells[pk].Value;
+        //    if (idVal == null)
+        //    {
+        //        MessageBox.Show("Selected row does not contain a primary key value.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //        return;
+        //    }
 
-            // gather editable fields present in the grid
-            var fields = new[] { "name", "amount", "date", "category", "type", "length", "notes", "description" };
-            var values = fields.Where(f => grid.Columns.Contains(f)).ToDictionary(f => f, f => row.Cells[f].Value);
+        //    // gather editable fields present in the grid
+        //    var fields = new[] { "name", "amount", "date", "category", "type", "length", "notes", "description" };
+        //    var values = fields.Where(f => grid.Columns.Contains(f)).ToDictionary(f => f, f => row.Cells[f].Value);
 
-            using var dlg = new EditRecordDialog(values);
-            if (dlg.ShowDialog(this) != DialogResult.OK) return;
+        //    using var dlg = new EditRecordDialog(values);
+        //    if (dlg.ShowDialog(this) != DialogResult.OK) return;
 
-            var newValues = dlg.Values; // dictionary of updated values
+        //    var newValues = dlg.Values; // dictionary of updated values
 
-            if (newValues.Count == 0)
-            {
-                MessageBox.Show("No changes to save.", "Edit", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
+        //    if (newValues.Count == 0)
+        //    {
+        //        MessageBox.Show("No changes to save.", "Edit", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        //        return;
+        //    }
 
-            try
-            {
-                using var con = new SqlConnection(BuildConnStr());
-                con.Open();
-                using var cmd = con.CreateCommand();
+        //    try
+        //    {
+        //        using var con = new SqlConnection(BuildConnStr());
+        //        con.Open();
+        //        using var cmd = con.CreateCommand();
 
-                var setClauses = new List<string>();
-                foreach (var kv in newValues)
-                {
-                    setClauses.Add($"[{kv.Key}] = @{kv.Key}");
-                    cmd.Parameters.AddWithValue("@" + kv.Key, kv.Value ?? DBNull.Value);
-                }
+        //        var setClauses = new List<string>();
+        //        foreach (var kv in newValues)
+        //        {
+        //            setClauses.Add($"[{kv.Key}] = @{kv.Key}");
+        //            cmd.Parameters.AddWithValue("@" + kv.Key, kv.Value ?? DBNull.Value);
+        //        }
 
-                cmd.CommandText = $"UPDATE dbo.[{table}] SET {string.Join(", ", setClauses)} WHERE {pk} = @id";
-                cmd.Parameters.AddWithValue("@id", idVal);
+        //        cmd.CommandText = $"UPDATE dbo.[{table}] SET {string.Join(", ", setClauses)} WHERE {pk} = @id";
+        //        cmd.Parameters.AddWithValue("@id", idVal);
 
-                int rows = cmd.ExecuteNonQuery();
-                MessageBox.Show(rows > 0 ? "Updated." : "No rows updated.", "Update", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                ReloadAll();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Update failed: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
+        //        int rows = cmd.ExecuteNonQuery();
+        //        MessageBox.Show(rows > 0 ? "Updated." : "No rows updated.", "Update", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        //        ReloadAll();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show("Update failed: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //    }
+        //}
 
         private sealed class EditRecordDialog : Form
         {

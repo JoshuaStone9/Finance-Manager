@@ -127,6 +127,18 @@ namespace FM
             allPaymentsButton.FlatAppearance.BorderColor = Color.Black;
             allPaymentsButton.FlatAppearance.BorderSize = 2;
 
+            // Add Money Button
+            Button addMoneyButton = new Button();
+            addMoneyButton.Text = "Add Money";
+            addMoneyButton.Size = new Size(280, 45);
+            addMoneyButton.Location = new Point(110, 430); // moved lower
+            addMoneyButton.BackColor = Color.FromArgb(255, 120, 120);
+            addMoneyButton.Click += AddMoneyButton_Click;
+            // black border
+            addMoneyButton.FlatStyle = FlatStyle.Flat;
+            addMoneyButton.FlatAppearance.BorderColor = Color.Black;
+            addMoneyButton.FlatAppearance.BorderSize = 2;
+
             // Load and resize the bell image
             Image notificationBellImg = Image.FromFile("images/NotificationBell_No_Notifications.png");
             Image resized = new Bitmap(notificationBellImg, new Size(70, 70));
@@ -161,6 +173,7 @@ namespace FM
             this.Controls.Add(allPaymentsButton);
             this.Controls.Add(logo);
             this.Controls.Add(notificationBell);
+            this.Controls.Add(addMoneyButton);
         }
 
         private void Form1_Paint(object sender, PaintEventArgs e)
@@ -223,6 +236,12 @@ namespace FM
         {
             AllPayments allPaymentsForm = new AllPayments();
             allPaymentsForm.Show();
+        }
+
+        private void AddMoneyButton_Click(object sender, EventArgs e)
+        {
+            AddMoney addMoneyForm = new AddMoney();
+            addMoneyForm.Show();
         }
 
         private void NotificationBell_Click(object sender, EventArgs e)
