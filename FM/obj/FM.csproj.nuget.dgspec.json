@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\josh\\source\\repos\\JoshuaStone9\\Finance-Manager\\FM\\FM.csproj": {}
+    "C:\\Users\\MINISTONEY\\source\\repos\\JoshuaStone9\\Finance-Manager\\FM\\FM.csproj": {}
   },
   "projects": {
-    "C:\\Users\\josh\\source\\repos\\JoshuaStone9\\Finance-Manager\\FM\\FM.csproj": {
+    "C:\\Users\\MINISTONEY\\source\\repos\\JoshuaStone9\\Finance-Manager\\FM\\FM.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\josh\\source\\repos\\JoshuaStone9\\Finance-Manager\\FM\\FM.csproj",
+        "projectUniqueName": "C:\\Users\\MINISTONEY\\source\\repos\\JoshuaStone9\\Finance-Manager\\FM\\FM.csproj",
         "projectName": "FM",
-        "projectPath": "C:\\Users\\josh\\source\\repos\\JoshuaStone9\\Finance-Manager\\FM\\FM.csproj",
-        "packagesPath": "C:\\Users\\josh\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\josh\\source\\repos\\JoshuaStone9\\Finance-Manager\\FM\\obj\\",
+        "projectPath": "C:\\Users\\MINISTONEY\\source\\repos\\JoshuaStone9\\Finance-Manager\\FM\\FM.csproj",
+        "packagesPath": "C:\\Users\\MINISTONEY\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\MINISTONEY\\source\\repos\\JoshuaStone9\\Finance-Manager\\FM\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\josh\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\MINISTONEY\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -27,7 +27,7 @@
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "C:\\Program Files\\dotnet\\library-packs": {},
-          "https://api.nuget.org/v3/index.json": {}
+          "https://www.nuget.org/api/v2": {}
         },
         "frameworks": {
           "net8.0-windows7.0": {

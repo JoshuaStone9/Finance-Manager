@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Data.SqlClient;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -20,6 +21,7 @@ namespace FM
         private Button savingsButton;
         private Button investmentsButton;
         private Button allPaymentsButton;
+        private Button InitialiseAllFieldsButton;
         private Button notificationBell;
         private System.Windows.Forms.Timer closeTimer;
         private Label messageLabel;
@@ -139,6 +141,14 @@ namespace FM
             addMoneyButton.FlatAppearance.BorderColor = Color.Black;
             addMoneyButton.FlatAppearance.BorderSize = 2;
 
+            // InitialiseFields Button 
+            InitialiseAllFieldsButton = new Button();
+                InitialiseAllFieldsButton.Text = "Initialise All Fields";
+                InitialiseAllFieldsButton.Size = new Size(280, 45);
+            InitialiseAllFieldsButton.Location = new Point(110, 430); // moved lower
+            InitialiseAllFieldsButton.BackColor = Color.FromArgb(255, 120, 120);
+            InitialiseAllFieldsButton.Click += InitialiseAllFieldsButton_Click;
+
             // Load and resize the bell image
             Image notificationBellImg = Image.FromFile("images/NotificationBell_No_Notifications.png");
             Image resized = new Bitmap(notificationBellImg, new Size(70, 70));
@@ -175,7 +185,26 @@ namespace FM
             this.Controls.Add(notificationBell);
             this.Controls.Add(addMoneyButton);
         }
+        private static string BuildConnStr()
+        {
+            var pwd = Environment.GetEnvironmentVariable("DB_PASSWORD", EnvironmentVariableTarget.User);
+            if (string.IsNullOrWhiteSpace(pwd))
+                throw new InvalidOperationException(
+                    "DB_PASSWORD environment variable not set for the current user.\n" +
+                    "Set it with: setx DB_PASSWORD \"YourPassword\" and restart Visual Studio/your app.");
 
+            var builder = new SqlConnectionStringBuilder
+            {
+                DataSource = "STONEY,1433",
+                InitialCatalog = "Finance_Manager",
+                UserID = "josh",
+                Password = pwd,
+                Encrypt = true,
+                TrustServerCertificate = true
+            };
+
+            return builder.ConnectionString;
+        }
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
             // Create gradient from top to bottom
@@ -242,6 +271,26 @@ namespace FM
         {
             AddMoney addMoneyForm = new AddMoney();
             addMoneyForm.Show();
+        }
+
+        public void InitialiseAllFieldsButton_Click(object sender, EventArgs e)
+        {
+            // Call the method to initialize all fields in the database
+            try
+            {
+                using var con = new SqlConnection(BuildConnStr());
+                con.Open();
+                using var cmd = con.CreateCommand();
+                cmd.CommandText = "EXEC InitializeAllFields"; // Assuming you have a stored procedure to initialize fields
+                cmd.ExecuteNonQuery();
+            }
+            finally
+            {
+
+            }
+            ;
+                // Show a message box to confirm initialization
+                MessageBox.Show("All fields have been initialized in the database.", "Initialization Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void NotificationBell_Click(object sender, EventArgs e)

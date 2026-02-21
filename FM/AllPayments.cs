@@ -58,8 +58,10 @@ namespace FM
         {
             InitializeComponent();
 
+            this.AutoScroll = true;
+            this.AutoScrollMargin = new Size(0, 20);
             Text = "All Payments";
-            ClientSize = new Size(1200, 1060);
+            ClientSize = new Size(1200, 1260);
             StartPosition = FormStartPosition.CenterScreen;
             DoubleBuffered = true;
             Font = new Font("Montserrat", 10, FontStyle.Regular);
@@ -118,8 +120,9 @@ namespace FM
             bottomPanel = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 80,
-                Padding = new Padding(12),
+                Height = 200,
+                Padding = new Padding(12, 12, 12, 20),
+
                 BackColor = Color.Transparent
             };
 
@@ -129,7 +132,7 @@ namespace FM
                 FlowDirection = FlowDirection.RightToLeft,
                 AutoSize = true,
                 WrapContents = false,
-                Padding = new Padding(0, 10, 0, 0),
+                Padding = new Padding(0, 12, 0, 0),
                 Margin = new Padding(0)
             };
 
@@ -235,40 +238,71 @@ namespace FM
             return b;
         }
 
-        private void EditEmergencyFund_Click(object? sender, EventArgs e)
+        private void EmergencyFundData()
         {
-            string input = Microsoft.VisualBasic.Interaction.InputBox("Enter new emergency fund amount:", "Edit Emergency Fund", txtEmergencyFund.Text);
-            if (decimal.TryParse(input, NumberStyles.Number, CultureInfo.CurrentCulture, out var newAmount))
+            try
             {
-                try
+                using var con = new SqlConnection(BuildConnStr());
+                con.Open();
+                string query = "SELECT amount FROM dbo.emergency_fund";
+                using var cmd = new SqlCommand(query, con);
+                var result = cmd.ExecuteScalar();
+                if (result != null && result != DBNull.Value)
                 {
-                    using var con = new SqlConnection(BuildConnStr());
-                    con.Open();
-                    using var cmd = con.CreateCommand();
-                    cmd.CommandText = "UPDATE dbo.savings SET amount = @amount WHERE name = 'Emergency Fund'";
-                    cmd.Parameters.AddWithValue("@amount", newAmount);
-                    int rows = cmd.ExecuteNonQuery();
-                    if (rows > 0)
-                    {
-                        MessageBox.Show("Emergency fund updated.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        ReloadAll();
-                    }
-                    else
-                    {
-                        MessageBox.Show("No emergency fund record found to update.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
+                    decimal amount = Convert.ToDecimal(result);
+                    txtEmergencyFund.Text = amount.ToString("C", CultureInfo.GetCultureInfo("en-GB"));
                 }
-                catch (Exception ex)
+                else
                 {
-                    MessageBox.Show("Failed to update emergency fund: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    txtEmergencyFund.Text = (0m).ToString("C", CultureInfo.GetCultureInfo("en-GB"));
                 }
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("Invalid amount entered.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Emergency fund error: " + ex.Message);
             }
         }
+        private void EditEmergencyFund_Click(object? sender, EventArgs e)
+        {
+            string input = Microsoft.VisualBasic.Interaction.InputBox(
+     "Enter new emergency fund amount:",
+     "Edit Emergency Fund",
+     txtEmergencyFund.Text);
 
+            if (!decimal.TryParse(input, NumberStyles.Currency, CultureInfo.GetCultureInfo("en-GB"), out var newAmount))
+            {
+                MessageBox.Show("Invalid amount entered.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                using var con = new SqlConnection(BuildConnStr());
+                con.Open();
+
+                using var cmd = con.CreateCommand();
+                cmd.CommandText = @"
+IF EXISTS (SELECT 1 FROM dbo.emergency_fund)
+    UPDATE dbo.emergency_fund SET amount = @amount;
+ELSE
+    INSERT INTO dbo.emergency_fund (amount) VALUES (@amount);";
+
+                var p = cmd.Parameters.Add("@amount", SqlDbType.Decimal);
+                txtEmergencyFund.Text = newAmount.ToString("C", CultureInfo.GetCultureInfo("en-GB"));
+                p.Precision = 12;
+                p.Scale = 2;
+                p.Value = newAmount;
+
+                cmd.ExecuteNonQuery();
+
+                MessageBox.Show("Emergency fund updated.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ReloadAll();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Failed to update emergency fund: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
         private void EditMonthlyAllowance_click(object? sender, EventArgs e) {
             string input = Microsoft.VisualBasic.Interaction.InputBox("Enter new monthly allowance amount:", "Edit Monthly Allowance", txtMonthlyAllowance.Text);
             if (decimal.TryParse(input, NumberStyles.Number, CultureInfo.CurrentCulture, out var newAmount))
@@ -278,7 +312,7 @@ namespace FM
                     using var con = new SqlConnection(BuildConnStr());
                     con.Open();
                     using var cmd = con.CreateCommand();
-                    cmd.CommandText = "UPDATE dbo.savings SET amount = @amount WHERE name = 'Monthly Allowance'";
+                    cmd.CommandText = "UPDATE dbo.monthly_allowance SET amount = @amount";
                     cmd.Parameters.AddWithValue("@amount", newAmount);
                     int rows = cmd.ExecuteNonQuery();
                     if (rows > 0)
@@ -398,6 +432,7 @@ namespace FM
             InvestmentsDataGrid();
             SavingsDataGrid();
             UpdateTotal();
+            EmergencyFundData();
         }
 
 
@@ -417,6 +452,11 @@ namespace FM
                 var dt = new DataTable();
                 da.Fill(dt);
                 gridBills.DataSource = dt;
+                
+                // Hide ID column and format headers
+                if (gridBills.Columns.Contains("billid"))
+                    gridBills.Columns["billid"].Visible = false;
+                FormatColumnHeaders(gridBills);
             }
             catch (Exception ex)
             {
@@ -435,6 +475,11 @@ namespace FM
                 var dt = new DataTable();
                 da.Fill(dt);
                 gridInvestments.DataSource = dt;
+                
+                // Hide ID column and format headers
+                if (gridInvestments.Columns.Contains("investments_id"))
+                    gridInvestments.Columns["investments_id"].Visible = false;
+                FormatColumnHeaders(gridInvestments);
             }
             catch (Exception ex)
             {
@@ -453,6 +498,11 @@ namespace FM
                 var dt = new DataTable();
                 da.Fill(dt);
                 gridExpenses.DataSource = dt;
+                
+                // Hide ID column and format headers
+                if (gridExpenses.Columns.Contains("extra_expense_id"))
+                    gridExpenses.Columns["extra_expense_id"].Visible = false;
+                FormatColumnHeaders(gridExpenses);
             }
             catch (Exception ex)
             {
@@ -471,6 +521,11 @@ namespace FM
                 var dt = new DataTable();
                 da.Fill(dt);
                 gridSavings.DataSource = dt;
+                
+                // Hide ID column and format headers
+                if (gridSavings.Columns.Contains("savings_id"))
+                    gridSavings.Columns["savings_id"].Visible = false;
+                FormatColumnHeaders(gridSavings);
             }
             catch (Exception ex)
             {
@@ -478,6 +533,16 @@ namespace FM
             }
         }
 
+        private void FormatColumnHeaders(DataGridView grid)
+        {
+            foreach (DataGridViewColumn col in grid.Columns)
+            {
+                if (!col.Visible) continue;
+                
+                // Capitalize first letter of each word
+                col.HeaderText = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(col.HeaderText.ToLower());
+            }
+        }
 
         private void FormatGrid(DataGridView grid)
         {
