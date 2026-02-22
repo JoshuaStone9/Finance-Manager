@@ -7,6 +7,7 @@ using System.Drawing.Drawing2D;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace FM
 {
@@ -22,7 +23,7 @@ namespace FM
 
             var builder = new SqlConnectionStringBuilder
             {
-                DataSource = "STONEY,1433", 
+                DataSource = "STONEY,1433",
                 InitialCatalog = "Finance_Manager",
                 UserID = "josh",
                 Password = pwd,
@@ -53,6 +54,8 @@ namespace FM
         private Button btnReload;
         private Button btnEditSelected;
         private Button btnDeleteSelected;
+        private Button btnSaveSelected;
+        private Button btnfilterByDate;
 
         public AllPayments()
         {
@@ -64,7 +67,7 @@ namespace FM
             ClientSize = new Size(1200, 1260);
             StartPosition = FormStartPosition.CenterScreen;
             DoubleBuffered = true;
-            Font = new Font("Montserrat", 10, FontStyle.Regular);
+            Font = new System.Drawing.Font("Montserrat", 10, FontStyle.Regular);
             Paint += AllPayments_Paint;
 
             BuildUi();
@@ -77,7 +80,7 @@ namespace FM
 
             logo = new PictureBox
             {
-                Image = Image.FromFile("images/FM_Logo_Main_Menu.png"),
+                Image = System.Drawing.Image.FromFile("images/FM_Logo_Main_Menu.png"),
                 SizeMode = PictureBoxSizeMode.StretchImage,
                 Size = new Size(120, 120),
                 Location = new Point((ClientSize.Width - 120) / 2, 0),
@@ -89,7 +92,7 @@ namespace FM
             title = new Label
             {
                 Text = "All Payments",
-                Font = new Font("Montserrat", 14F, FontStyle.Bold),
+                Font = new System.Drawing.Font("Montserrat", 14F, FontStyle.Bold),
                 AutoSize = true,
                 BackColor = Color.Transparent,
                 Location = new Point((ClientSize.Width - 160) / 2, 120)
@@ -99,11 +102,13 @@ namespace FM
             btnReload = MakePrimaryButton("Reload", new Point(16, 150), new Size(140, 40), (s, e) => ReloadAll());
             Controls.Add(btnReload);
 
- 
+
             btnEditSelected = MakeSecondaryButton("Edit Selected", new Point(168, 150), new Size(140, 40), (s, e) => EditSelected());
             btnDeleteSelected = MakeSecondaryButton("Delete Selected", new Point(320, 150), new Size(140, 40), (s, e) => DeleteSelected());
+            btnfilterByDate = MakeSecondaryButton("Filter by Date", new Point(472, 150), new Size(140, 40), FilterByDate_click);
             Controls.Add(btnEditSelected);
             Controls.Add(btnDeleteSelected);
+            Controls.Add(btnfilterByDate);
 
 
             int left = 16;
@@ -208,6 +213,7 @@ namespace FM
 
             };
 
+
             totalLayout.Controls.Add(txtGrandTotal);
             totalLayout.Controls.Add(lblGrandTotal);
             totalLayout.Controls.Add(txtEmergencyFund);
@@ -303,39 +309,163 @@ ELSE
                 MessageBox.Show("Failed to update emergency fund: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-        private void EditMonthlyAllowance_click(object? sender, EventArgs e) {
-            string input = Microsoft.VisualBasic.Interaction.InputBox("Enter new monthly allowance amount:", "Edit Monthly Allowance", txtMonthlyAllowance.Text);
-            if (decimal.TryParse(input, NumberStyles.Number, CultureInfo.CurrentCulture, out var newAmount))
-            {
-                try
-                {
-                    using var con = new SqlConnection(BuildConnStr());
-                    con.Open();
-                    using var cmd = con.CreateCommand();
-                    cmd.CommandText = "UPDATE dbo.monthly_allowance SET amount = @amount";
-                    cmd.Parameters.AddWithValue("@amount", newAmount);
-                    int rows = cmd.ExecuteNonQuery();
-                    if (rows > 0)
-                    {
-                        MessageBox.Show("Monthly allowance updated.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        ReloadAll();
-                    }
-                    else
-                    {
-                        MessageBox.Show("No monthly allowance record found to update.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Failed to update monthly allowance: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
-            else
+        private void EditMonthlyAllowance_click(object? sender, EventArgs e)
+        {
+            string input = Microsoft.VisualBasic.Interaction.InputBox(
+     "Enter new monthly allowance amount:",
+     "Edit Monthly Allowance",
+     txtMonthlyAllowance.Text);
+
+            if (!decimal.TryParse(input, NumberStyles.Currency, CultureInfo.GetCultureInfo("en-GB"), out var newAmount))
             {
                 MessageBox.Show("Invalid amount entered.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
 
+            try
+            {
+                using var con = new SqlConnection(BuildConnStr());
+                con.Open();
+
+                using var cmd = con.CreateCommand();
+                cmd.CommandText = @"
+IF EXISTS (SELECT 1 FROM dbo.monthly_allowance)
+    UPDATE dbo.monthly_allowance SET amount = @amount;
+ELSE
+    INSERT INTO dbo.monthly_allowance (amount) VALUES (@amount);";
+
+                var p = cmd.Parameters.Add("@amount", SqlDbType.Decimal);
+                txtEmergencyFund.Text = newAmount.ToString("C", CultureInfo.GetCultureInfo("en-GB"));
+                p.Precision = 12;
+                p.Scale = 2;
+                p.Value = newAmount;
+
+                cmd.ExecuteNonQuery();
+
+                MessageBox.Show("Monthly Allowance updated.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ReloadAll();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Failed to update Monthly Allowance: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
+
+        private void EditMonthlyAllowance()
+        {
+            try
+            {
+                using var con = new SqlConnection(BuildConnStr());
+                con.Open();
+                string query = "SELECT amount FROM dbo.monthly_allowance";
+                using var cmd = new SqlCommand(query, con);
+                var result = cmd.ExecuteScalar();
+                if (result != null && result != DBNull.Value)
+                {
+                    decimal amount = Convert.ToDecimal(result);
+                    txtMonthlyAllowance.Text = amount.ToString("C", CultureInfo.GetCultureInfo("en-GB"));
+                }
+                else
+                {
+                    txtMonthlyAllowance.Text = (0m).ToString("C", CultureInfo.GetCultureInfo("en-GB"));
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Monthly Allowance error: " + ex.Message);
+            }
+        }
+
+        private void FilterByDate_click(object? sender, EventArgs e)
+        {
+            string input = Microsoft.VisualBasic.Interaction.InputBox(
+        "Enter month to filter (1-12):",
+        "Filter by Month",
+        DateTime.Today.Month.ToString());
+
+            if (!int.TryParse(input, out int month) || month < 1 || month > 12)
+            {
+                MessageBox.Show("Please enter a valid month number (1-12).", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string yearInput = Microsoft.VisualBasic.Interaction.InputBox(
+        "Enter year:",
+        "Filter by Year",
+        DateTime.Today.Year.ToString());
+
+            if (!int.TryParse(yearInput, out int year) || year < 2000 || year > 2100)
+            {
+                MessageBox.Show("Please enter a valid year.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            FilterGridByMonth(month, year);
+        }
+
+        private void FilterGridByMonth(int month, int year)
+        {
+            try
+            {
+                using var con = new SqlConnection(BuildConnStr());
+                con.Open();
+
+                // Filter Bills
+                string billsQuery = @"SELECT billid, name, amount, [date], type, length, description 
+                             FROM dbo.bills 
+                             WHERE MONTH([date]) = @month AND YEAR([date]) = @year 
+                             ORDER BY [date] DESC";
+                LoadFilteredData(gridBills, billsQuery, con, month, year, "billid");
+
+                // Filter Expenses
+                string expensesQuery = @"SELECT extra_expense_id, name, amount, duedate AS [date], category, type, length, description 
+                                FROM dbo.extra_expenses 
+                                WHERE MONTH(duedate) = @month AND YEAR(duedate) = @year 
+                                ORDER BY duedate DESC";
+                LoadFilteredData(gridExpenses, expensesQuery, con, month, year, "extra_expense_id");
+
+                // Filter Investments
+                string investmentsQuery = @"SELECT investments_id, name, amount, [date], category, length, notes 
+                                   FROM dbo.investments 
+                                   WHERE MONTH([date]) = @month AND YEAR([date]) = @year 
+                                   ORDER BY [date] DESC";
+                LoadFilteredData(gridInvestments, investmentsQuery, con, month, year, "investments_id");
+
+                // Filter Savings
+                string savingsQuery = @"SELECT savings_id, name, amount, length, [date], notes 
+                               FROM dbo.savings 
+                               WHERE MONTH([date]) = @month AND YEAR([date]) = @year 
+                               ORDER BY [date] DESC";
+                LoadFilteredData(gridSavings, savingsQuery, con, month, year, "savings_id");
+
+                UpdateTotal();
+                MessageBox.Show($"Filtered to show records from {month}/{year}", "Filter Applied", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Filter failed: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void LoadFilteredData(DataGridView grid, string query, SqlConnection con, int month, int year, string idColumn)
+        {
+            using var cmd = new SqlCommand(query, con);
+            cmd.Parameters.AddWithValue("@month", month);
+            cmd.Parameters.AddWithValue("@year", year);
+
+            var da = new SqlDataAdapter(cmd);
+            var dt = new DataTable();
+            da.Fill(dt);
+            grid.DataSource = dt;
+
+            if (grid.Columns.Contains(idColumn))
+                grid.Columns[idColumn].Visible = false;
+
+            FormatColumnHeaders(grid);
+        }
+    
+
+
 
         private Button MakeSecondaryButton(string text, Point location, Size size, EventHandler onClick)
         {
@@ -361,7 +491,7 @@ ELSE
                 Text = caption,
                 Location = new Point(location.X, location.Y - 28),
                 AutoSize = true,
-                Font = new Font(Font, FontStyle.Bold),
+                Font = new System.Drawing.Font(Font, FontStyle.Bold),
                 BackColor = Color.Transparent
             };
             Controls.Add(lbl);
@@ -381,9 +511,9 @@ ELSE
 
             grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(255, 150, 150);
             grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.Black;
-            grid.ColumnHeadersDefaultCellStyle.Font = new Font(Font, FontStyle.Bold);
+            grid.ColumnHeadersDefaultCellStyle.Font = new System.Drawing.Font(Font, FontStyle.Bold);
 
- 
+
             grid.DataBindingComplete += (s, e) => { FormatGrid(grid); UpdateTotal(); };
             grid.CellValueChanged += (s, e) => UpdateTotal();
             grid.RowsRemoved += (s, e) => UpdateTotal();
@@ -433,6 +563,7 @@ ELSE
             SavingsDataGrid();
             UpdateTotal();
             EmergencyFundData();
+            EditMonthlyAllowance();
         }
 
 
@@ -452,7 +583,7 @@ ELSE
                 var dt = new DataTable();
                 da.Fill(dt);
                 gridBills.DataSource = dt;
-                
+
                 // Hide ID column and format headers
                 if (gridBills.Columns.Contains("billid"))
                     gridBills.Columns["billid"].Visible = false;
@@ -475,7 +606,7 @@ ELSE
                 var dt = new DataTable();
                 da.Fill(dt);
                 gridInvestments.DataSource = dt;
-                
+
                 // Hide ID column and format headers
                 if (gridInvestments.Columns.Contains("investments_id"))
                     gridInvestments.Columns["investments_id"].Visible = false;
@@ -498,7 +629,7 @@ ELSE
                 var dt = new DataTable();
                 da.Fill(dt);
                 gridExpenses.DataSource = dt;
-                
+
                 // Hide ID column and format headers
                 if (gridExpenses.Columns.Contains("extra_expense_id"))
                     gridExpenses.Columns["extra_expense_id"].Visible = false;
@@ -521,7 +652,7 @@ ELSE
                 var dt = new DataTable();
                 da.Fill(dt);
                 gridSavings.DataSource = dt;
-                
+
                 // Hide ID column and format headers
                 if (gridSavings.Columns.Contains("savings_id"))
                     gridSavings.Columns["savings_id"].Visible = false;
@@ -538,7 +669,7 @@ ELSE
             foreach (DataGridViewColumn col in grid.Columns)
             {
                 if (!col.Visible) continue;
-                
+
                 // Capitalize first letter of each word
                 col.HeaderText = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(col.HeaderText.ToLower());
             }
@@ -755,127 +886,127 @@ ELSE
                 MessageBox.Show("Update failed: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+    }
 
-        private sealed class EditRecordDialog : Form
+    public class EditRecordDialog : Form
+    {
+        private readonly Dictionary<string, object?> initial;
+        public readonly Dictionary<string, object?> Values = new();
+
+        private readonly TextBox txtName = new() { Width = 300 };
+        private readonly TextBox txtAmount = new() { Width = 120 };
+        private readonly DateTimePicker dtDate = new() { Format = DateTimePickerFormat.Short };
+        private readonly TextBox txtCategory = new() { Width = 200 };
+        private readonly TextBox txtType = new() { Width = 120 };
+        private readonly TextBox txtLength = new() { Width = 120 };
+        private readonly TextBox txtNotes = new() { Width = 300, Multiline = true, Height = 80 };
+
+        public EditRecordDialog(Dictionary<string, object?> values)
         {
-            private readonly Dictionary<string, object?> initial;
-            public readonly Dictionary<string, object?> Values = new();
+            initial = values;
+            Text = "Edit Record";
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            StartPosition = FormStartPosition.CenterParent;
+            ClientSize = new Size(420, 380);
+            MaximizeBox = false;
+            MinimizeBox = false;
 
-            private readonly TextBox txtName = new() { Width = 300 };
-            private readonly TextBox txtAmount = new() { Width = 120 };
-            private readonly DateTimePicker dtDate = new() { Format = DateTimePickerFormat.Short };
-            private readonly TextBox txtCategory = new() { Width = 200 };
-            private readonly TextBox txtType = new() { Width = 120 };
-            private readonly TextBox txtLength = new() { Width = 120 };
-            private readonly TextBox txtNotes = new() { Width = 300, Multiline = true, Height = 80 };
+            var y = 12;
+            void AddLabel(string text) => Controls.Add(new Label { Text = text, Location = new Point(12, y), AutoSize = true });
+            void IncY(int delta = 28) => y += delta;
 
-            public EditRecordDialog(Dictionary<string, object?> values)
+            if (values.ContainsKey("name"))
             {
-                initial = values;
-                Text = "Edit Record";
-                FormBorderStyle = FormBorderStyle.FixedDialog;
-                StartPosition = FormStartPosition.CenterParent;
-                ClientSize = new Size(420, 380);
-                MaximizeBox = false;
-                MinimizeBox = false;
-
-                var y = 12;
-                void AddLabel(string text) => Controls.Add(new Label { Text = text, Location = new Point(12, y), AutoSize = true });
-                void IncY(int delta = 28) => y += delta;
-
-                if (values.ContainsKey("name"))
-                {
-                    AddLabel("Name");
-                    txtName.Location = new Point(12, y + 18);
-                    txtName.Text = Convert.ToString(values["name"]) ?? string.Empty;
-                    Controls.Add(txtName);
-                    IncY(60);
-                }
-
-                if (values.ContainsKey("amount"))
-                {
-                    AddLabel("Amount");
-                    txtAmount.Location = new Point(12, y + 18);
-                    txtAmount.Text = Convert.ToString(values["amount"], CultureInfo.InvariantCulture) ?? string.Empty;
-                    Controls.Add(txtAmount);
-                    IncY(40);
-                }
-
-                if (values.ContainsKey("date"))
-                {
-                    AddLabel("Date");
-                    dtDate.Location = new Point(12, y + 18);
-                    if (values["date"] is DateTime dt) dtDate.Value = dt.Date;
-                    Controls.Add(dtDate);
-                    IncY(40);
-                }
-
-                if (values.ContainsKey("category"))
-                {
-                    AddLabel("Category");
-                    txtCategory.Location = new Point(12, y + 18);
-                    txtCategory.Text = Convert.ToString(values["category"]) ?? string.Empty;
-                    Controls.Add(txtCategory);
-                    IncY(40);
-                }
-
-                if (values.ContainsKey("type"))
-                {
-                    AddLabel("Type");
-                    txtType.Location = new Point(12, y + 18);
-                    txtType.Text = Convert.ToString(values["type"]) ?? string.Empty;
-                    Controls.Add(txtType);
-                    IncY(40);
-                }
-
-                if (values.ContainsKey("length"))
-                {
-                    AddLabel("Length");
-                    txtLength.Location = new Point(12, y + 18);
-                    txtLength.Text = Convert.ToString(values["length"]) ?? string.Empty;
-                    Controls.Add(txtLength);
-                    IncY(40);
-                }
-
-                if (values.ContainsKey("notes") || values.ContainsKey("description"))
-                {
-                    AddLabel("Notes");
-                    txtNotes.Location = new Point(12, y + 18);
-                    var noteVal = values.ContainsKey("notes") ? values["notes"] : values.GetValueOrDefault("description");
-                    txtNotes.Text = Convert.ToString(noteVal) ?? string.Empty;
-                    Controls.Add(txtNotes);
-                    IncY(100);
-                }
-
-                var btnSave = new Button { Text = "Save", Location = new Point(240, ClientSize.Height - 44), Size = new Size(80, 30) };
-                var btnCancel = new Button { Text = "Cancel", Location = new Point(330, ClientSize.Height - 44), Size = new Size(80, 30) };
-                btnSave.Click += BtnSave_Click;
-                btnCancel.Click += (s, e) => DialogResult = DialogResult.Cancel;
-                Controls.Add(btnSave);
-                Controls.Add(btnCancel);
+                AddLabel("Name");
+                txtName.Location = new Point(12, y + 18);
+                txtName.Text = Convert.ToString(values["name"]) ?? string.Empty;
+                Controls.Add(txtName);
+                IncY(60);
             }
 
-            private void BtnSave_Click(object? sender, EventArgs e)
+            if (values.ContainsKey("amount"))
             {
-                if (Controls.Contains(txtAmount) && !string.IsNullOrWhiteSpace(txtAmount.Text))
-                {
-                    if (!decimal.TryParse(txtAmount.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out _)
-                        && !decimal.TryParse(txtAmount.Text, NumberStyles.Number, CultureInfo.InvariantCulture, out _))
-                    {
-                        MessageBox.Show("Amount must be a number.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
-                }
-                if (Controls.Contains(txtName)) Values["name"] = txtName.Text.Trim();
-                if (Controls.Contains(txtAmount)) Values["amount"] = string.IsNullOrWhiteSpace(txtAmount.Text) ? (object?)DBNull.Value : (object)decimal.Parse(txtAmount.Text, CultureInfo.CurrentCulture);
-                if (Controls.Contains(dtDate)) Values["date"] = dtDate.Value.Date;
-                if (Controls.Contains(txtCategory)) Values["category"] = string.IsNullOrWhiteSpace(txtCategory.Text) ? (object?)DBNull.Value : txtCategory.Text.Trim();
-                if (Controls.Contains(txtType)) Values["type"] = string.IsNullOrWhiteSpace(txtType.Text) ? (object?)DBNull.Value : txtType.Text.Trim();
-                if (Controls.Contains(txtLength)) Values["length"] = string.IsNullOrWhiteSpace(txtLength.Text) ? (object?)DBNull.Value : txtLength.Text.Trim();
-                if (Controls.Contains(txtNotes)) Values["notes"] = string.IsNullOrWhiteSpace(txtNotes.Text) ? (object?)DBNull.Value : txtNotes.Text.Trim();
-
-                DialogResult = DialogResult.OK;
+                AddLabel("Amount");
+                txtAmount.Location = new Point(12, y + 18);
+                txtAmount.Text = Convert.ToString(values["amount"], CultureInfo.InvariantCulture) ?? string.Empty;
+                Controls.Add(txtAmount);
+                IncY(40);
             }
+
+            if (values.ContainsKey("date"))
+            {
+                AddLabel("Date");
+                dtDate.Location = new Point(12, y + 18);
+                if (values["date"] is DateTime dt) dtDate.Value = dt.Date;
+                Controls.Add(dtDate);
+                IncY(40);
+            }
+
+            if (values.ContainsKey("category"))
+            {
+                AddLabel("Category");
+                txtCategory.Location = new Point(12, y + 18);
+                txtCategory.Text = Convert.ToString(values["category"]) ?? string.Empty;
+                Controls.Add(txtCategory);
+                IncY(40);
+            }
+
+            if (values.ContainsKey("type"))
+            {
+                AddLabel("Type");
+                txtType.Location = new Point(12, y + 18);
+                txtType.Text = Convert.ToString(values["type"]) ?? string.Empty;
+                Controls.Add(txtType);
+                IncY(40);
+            }
+
+            if (values.ContainsKey("length"))
+            {
+                AddLabel("Length");
+                txtLength.Location = new Point(12, y + 18);
+                txtLength.Text = Convert.ToString(values["length"]) ?? string.Empty;
+                Controls.Add(txtLength);
+                IncY(40);
+            }
+
+            if (values.ContainsKey("notes") || values.ContainsKey("description"))
+            {
+                AddLabel("Notes");
+                txtNotes.Location = new Point(12, y + 18);
+                var noteVal = values.ContainsKey("notes") ? values["notes"] : values.GetValueOrDefault("description");
+                txtNotes.Text = Convert.ToString(noteVal) ?? string.Empty;
+                Controls.Add(txtNotes);
+                IncY(100);
+            }
+
+            var btnSave = new Button { Text = "Save", Location = new Point(240, ClientSize.Height - 44), Size = new Size(80, 30) };
+            var btnCancel = new Button { Text = "Cancel", Location = new Point(330, ClientSize.Height - 44), Size = new Size(80, 30) };
+            btnSave.Click += BtnSave_Click;
+            btnCancel.Click += (s, e) => DialogResult = DialogResult.Cancel;
+            Controls.Add(btnSave);
+            Controls.Add(btnCancel);
+        }
+
+        private void BtnSave_Click(object? sender, EventArgs e)
+        {
+            if (Controls.Contains(txtAmount) && !string.IsNullOrWhiteSpace(txtAmount.Text))
+            {
+                if (!decimal.TryParse(txtAmount.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out _)
+                    && !decimal.TryParse(txtAmount.Text, NumberStyles.Number, CultureInfo.InvariantCulture, out _))
+                {
+                    MessageBox.Show("Amount must be a number.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+            }
+            if (Controls.Contains(txtName)) Values["name"] = txtName.Text.Trim();
+            if (Controls.Contains(txtAmount)) Values["amount"] = string.IsNullOrWhiteSpace(txtAmount.Text) ? (object?)DBNull.Value : (object)decimal.Parse(txtAmount.Text, CultureInfo.CurrentCulture);
+            if (Controls.Contains(dtDate)) Values["date"] = dtDate.Value.Date;
+            if (Controls.Contains(txtCategory)) Values["category"] = string.IsNullOrWhiteSpace(txtCategory.Text) ? (object?)DBNull.Value : txtCategory.Text.Trim();
+            if (Controls.Contains(txtType)) Values["type"] = string.IsNullOrWhiteSpace(txtType.Text) ? (object?)DBNull.Value : txtType.Text.Trim();
+            if (Controls.Contains(txtLength)) Values["length"] = string.IsNullOrWhiteSpace(txtLength.Text) ? (object?)DBNull.Value : txtLength.Text.Trim();
+            if (Controls.Contains(txtNotes)) Values["notes"] = string.IsNullOrWhiteSpace(txtNotes.Text) ? (object?)DBNull.Value : txtNotes.Text.Trim();
+
+            DialogResult = DialogResult.OK;
         }
     }
 }
