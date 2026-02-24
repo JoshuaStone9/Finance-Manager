@@ -13,6 +13,11 @@ namespace FM
 {
     public partial class AllPayments : Form
     {
+        // Add these fields to track the current filter state
+        private int currentMonth = DateTime.Today.Month;
+        private int currentYear = DateTime.Today.Year;
+        private bool isFiltered = false;
+
         private static string BuildConnStr()
         {
             var pwd = Environment.GetEnvironmentVariable("DB_PASSWORD", EnvironmentVariableTarget.User);
@@ -56,6 +61,11 @@ namespace FM
         private Button btnDeleteSelected;
         private Button btnSaveSelected;
         private Button btnfilterByDate;
+        private Button btnClearFilter;
+        private Button btnAddPreviousBills;
+
+        // Add this field with your other UI fields
+        private Label lblCurrentView;
 
         public AllPayments()
         {
@@ -106,9 +116,13 @@ namespace FM
             btnEditSelected = MakeSecondaryButton("Edit Selected", new Point(168, 150), new Size(140, 40), (s, e) => EditSelected());
             btnDeleteSelected = MakeSecondaryButton("Delete Selected", new Point(320, 150), new Size(140, 40), (s, e) => DeleteSelected());
             btnfilterByDate = MakeSecondaryButton("Filter by Date", new Point(472, 150), new Size(140, 40), FilterByDate_click);
+            btnClearFilter = MakeSecondaryButton("Clear Filter", new Point(624, 150), new Size(140, 40), ClearFilter_click);
+            btnAddPreviousBills = MakeSecondaryButton("Add Previous Month's Bills", new Point(776, 150), new Size(200, 40), (s, e) => AddPreviousBills());
             Controls.Add(btnEditSelected);
             Controls.Add(btnDeleteSelected);
             Controls.Add(btnfilterByDate);
+            Controls.Add(btnClearFilter);
+            Controls.Add(btnAddPreviousBills);
 
 
             int left = 16;
@@ -226,6 +240,16 @@ namespace FM
             editMonthlyAllowance.Click += EditMonthlyAllowance_click;
             bottomPanel.Controls.Add(totalLayout);
             Controls.Add(bottomPanel);
+
+            lblCurrentView = new Label
+            {
+                Text = $"Viewing: {DateTime.Today:MMMM yyyy}",
+                Font = new System.Drawing.Font("Montserrat", 9F, FontStyle.Italic),
+                AutoSize = true,
+                BackColor = Color.Transparent,
+                Location = new Point((ClientSize.Width - 150) / 2, 145)
+            };
+            Controls.Add(lblCurrentView);
         }
 
         private Button MakePrimaryButton(string text, Point location, Size size, EventHandler onClick)
@@ -246,34 +270,16 @@ namespace FM
 
         private void EmergencyFundData()
         {
-            try
-            {
-                using var con = new SqlConnection(BuildConnStr());
-                con.Open();
-                string query = "SELECT amount FROM dbo.emergency_fund";
-                using var cmd = new SqlCommand(query, con);
-                var result = cmd.ExecuteScalar();
-                if (result != null && result != DBNull.Value)
-                {
-                    decimal amount = Convert.ToDecimal(result);
-                    txtEmergencyFund.Text = amount.ToString("C", CultureInfo.GetCultureInfo("en-GB"));
-                }
-                else
-                {
-                    txtEmergencyFund.Text = (0m).ToString("C", CultureInfo.GetCultureInfo("en-GB"));
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Emergency fund error: " + ex.Message);
-            }
+            LoadEmergencyFund();
         }
         private void EditEmergencyFund_Click(object? sender, EventArgs e)
         {
             string input = Microsoft.VisualBasic.Interaction.InputBox(
-     "Enter new emergency fund amount:",
-     "Edit Emergency Fund",
-     txtEmergencyFund.Text);
+                "Enter new emergency fund amount:",
+                "Edit Emergency Fund",
+                txtEmergencyFund.Text);
+
+            if (string.IsNullOrWhiteSpace(input)) return;
 
             if (!decimal.TryParse(input, NumberStyles.Currency, CultureInfo.GetCultureInfo("en-GB"), out var newAmount))
             {
@@ -287,22 +293,22 @@ namespace FM
                 con.Open();
 
                 using var cmd = con.CreateCommand();
+                // Store as a single global value
                 cmd.CommandText = @"
 IF EXISTS (SELECT 1 FROM dbo.emergency_fund)
-    UPDATE dbo.emergency_fund SET amount = @amount;
+    UPDATE dbo.emergency_fund SET amount = @amount, updated_at = GETDATE();
 ELSE
-    INSERT INTO dbo.emergency_fund (amount) VALUES (@amount);";
+    INSERT INTO dbo.emergency_fund (amount, updated_at) VALUES (@amount, GETDATE());";
 
                 var p = cmd.Parameters.Add("@amount", SqlDbType.Decimal);
-                txtEmergencyFund.Text = newAmount.ToString("C", CultureInfo.GetCultureInfo("en-GB"));
                 p.Precision = 12;
                 p.Scale = 2;
                 p.Value = newAmount;
 
                 cmd.ExecuteNonQuery();
 
+                txtEmergencyFund.Text = newAmount.ToString("C", CultureInfo.GetCultureInfo("en-GB"));
                 MessageBox.Show("Emergency fund updated.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                ReloadAll();
             }
             catch (Exception ex)
             {
@@ -312,9 +318,11 @@ ELSE
         private void EditMonthlyAllowance_click(object? sender, EventArgs e)
         {
             string input = Microsoft.VisualBasic.Interaction.InputBox(
-     "Enter new monthly allowance amount:",
-     "Edit Monthly Allowance",
-     txtMonthlyAllowance.Text);
+ "Enter new monthly allowance amount:",
+ "Edit Monthly Allowance",
+ txtMonthlyAllowance.Text);
+
+            if (string.IsNullOrWhiteSpace(input)) return;
 
             if (!decimal.TryParse(input, NumberStyles.Currency, CultureInfo.GetCultureInfo("en-GB"), out var newAmount))
             {
@@ -335,13 +343,13 @@ ELSE
     INSERT INTO dbo.monthly_allowance (amount) VALUES (@amount);";
 
                 var p = cmd.Parameters.Add("@amount", SqlDbType.Decimal);
-                txtEmergencyFund.Text = newAmount.ToString("C", CultureInfo.GetCultureInfo("en-GB"));
                 p.Precision = 12;
                 p.Scale = 2;
                 p.Value = newAmount;
 
                 cmd.ExecuteNonQuery();
 
+                txtMonthlyAllowance.Text = newAmount.ToString("C", CultureInfo.GetCultureInfo("en-GB"));
                 MessageBox.Show("Monthly Allowance updated.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 ReloadAll();
             }
@@ -350,7 +358,6 @@ ELSE
                 MessageBox.Show("Failed to update Monthly Allowance: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
         private void EditMonthlyAllowance()
         {
             try
@@ -400,7 +407,21 @@ ELSE
                 return;
             }
 
+            currentMonth = month;
+            currentYear = year;
+            isFiltered = true;
+
             FilterGridByMonth(month, year);
+        }
+
+        private void ClearFilter_click(object? sender, EventArgs e)
+        {
+            currentMonth = DateTime.Today.Month;
+            currentYear = DateTime.Today.Year;
+            isFiltered = false;
+
+            ReloadAll();
+            MessageBox.Show("Filter cleared. Showing all records.", "Filter Cleared", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void FilterGridByMonth(int month, int year)
@@ -412,33 +433,38 @@ ELSE
 
                 // Filter Bills
                 string billsQuery = @"SELECT billid, name, amount, [date], type, length, description 
-                             FROM dbo.bills 
-                             WHERE MONTH([date]) = @month AND YEAR([date]) = @year 
-                             ORDER BY [date] DESC";
+             FROM dbo.bills 
+             WHERE MONTH([date]) = @month AND YEAR([date]) = @year 
+             ORDER BY [date] DESC";
                 LoadFilteredData(gridBills, billsQuery, con, month, year, "billid");
 
                 // Filter Expenses
                 string expensesQuery = @"SELECT extra_expense_id, name, amount, duedate AS [date], category, type, length, description 
-                                FROM dbo.extra_expenses 
-                                WHERE MONTH(duedate) = @month AND YEAR(duedate) = @year 
-                                ORDER BY duedate DESC";
+                FROM dbo.extra_expenses 
+                WHERE MONTH(duedate) = @month AND YEAR(duedate) = @year 
+                ORDER BY duedate DESC";
                 LoadFilteredData(gridExpenses, expensesQuery, con, month, year, "extra_expense_id");
 
                 // Filter Investments
                 string investmentsQuery = @"SELECT investments_id, name, amount, [date], category, length, notes 
-                                   FROM dbo.investments 
-                                   WHERE MONTH([date]) = @month AND YEAR([date]) = @year 
-                                   ORDER BY [date] DESC";
+           FROM dbo.investments 
+           WHERE MONTH([date]) = @month AND YEAR([date]) = @year 
+           ORDER BY [date] DESC";
                 LoadFilteredData(gridInvestments, investmentsQuery, con, month, year, "investments_id");
 
                 // Filter Savings
                 string savingsQuery = @"SELECT savings_id, name, amount, length, [date], notes 
-                               FROM dbo.savings 
-                               WHERE MONTH([date]) = @month AND YEAR([date]) = @year 
-                               ORDER BY [date] DESC";
+       FROM dbo.savings 
+       WHERE MONTH([date]) = @month AND YEAR([date]) = @year 
+       ORDER BY [date] DESC";
                 LoadFilteredData(gridSavings, savingsQuery, con, month, year, "savings_id");
 
+                // Load emergency fund (always shows the same global value)
+                LoadEmergencyFund();
+
                 UpdateTotal();
+                lblCurrentView.Text = $"Viewing: {new DateTime(year, month, 1):MMMM yyyy}";
+
                 MessageBox.Show($"Filtered to show records from {month}/{year}", "Filter Applied", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
@@ -446,6 +472,35 @@ ELSE
                 MessageBox.Show("Filter failed: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        private void LoadEmergencyFund()
+        {
+            try
+            {
+                using var con = new SqlConnection(BuildConnStr());
+                con.Open();
+                // Get the global emergency fund amount (no month/year filter)
+                string query = "SELECT TOP 1 amount FROM dbo.emergency_fund ORDER BY updated_at DESC";
+                using var cmd = new SqlCommand(query, con);
+
+                var result = cmd.ExecuteScalar();
+                if (result != null && result != DBNull.Value)
+                {
+                    decimal amount = Convert.ToDecimal(result);
+                    txtEmergencyFund.Text = amount.ToString("C", CultureInfo.GetCultureInfo("en-GB"));
+                }
+                else
+                {
+                    txtEmergencyFund.Text = (0m).ToString("C", CultureInfo.GetCultureInfo("en-GB"));
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Emergency fund error: " + ex.Message);
+            }
+        }
+
+
 
         private void LoadFilteredData(DataGridView grid, string query, SqlConnection con, int month, int year, string idColumn)
         {
@@ -463,7 +518,7 @@ ELSE
 
             FormatColumnHeaders(grid);
         }
-    
+
 
 
 
@@ -557,13 +612,28 @@ ELSE
 
         private void ReloadAll()
         {
-            BillsDataGrid();
-            ExtraExpenseDataGrid();
-            InvestmentsDataGrid();
-            SavingsDataGrid();
-            UpdateTotal();
-            EmergencyFundData();
-            EditMonthlyAllowance();
+            // Check if we're in filtered mode
+            if (isFiltered)
+            {
+                // If filtered, reload with the current filter
+                FilterGridByMonth(currentMonth, currentYear);
+            }
+            else
+            {
+                // Reset to current month/year when not filtered
+                currentMonth = DateTime.Today.Month;
+                currentYear = DateTime.Today.Year;
+
+                BillsDataGrid();
+                ExtraExpenseDataGrid();
+                InvestmentsDataGrid();
+                SavingsDataGrid();
+                UpdateTotal();
+                EmergencyFundData();
+                EditMonthlyAllowance();
+
+                lblCurrentView.Text = $"Viewing: {DateTime.Today:MMMM yyyy}";
+            }
         }
 
 
@@ -870,7 +940,22 @@ ELSE
                 var setClauses = new List<string>();
                 foreach (var kv in newValues)
                 {
-                    setClauses.Add($"[{kv.Key}] = @{kv.Key}");
+                    // Map column names based on table
+                    string columnName = kv.Key;
+                    
+                    // Map 'notes' to 'description' for bills and extra_expenses tables
+                    if (kv.Key == "notes" && (table == "bills" || table == "extra_expenses"))
+                    {
+                        columnName = "description";
+                    }
+                    
+                    // Map 'date' to 'duedate' for extra_expenses table
+                    if (kv.Key == "date" && table == "extra_expenses")
+                    {
+                        columnName = "duedate";
+                    }
+                    
+                    setClauses.Add($"[{columnName}] = @{kv.Key}");
                     cmd.Parameters.AddWithValue("@" + kv.Key, kv.Value ?? DBNull.Value);
                 }
 
@@ -886,7 +971,75 @@ ELSE
                 MessageBox.Show("Update failed: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+    
+
+    private void AddPreviousBills()
+        {
+            try
+            {
+                using var con = new SqlConnection(BuildConnStr());
+                con.Open();
+        
+                // Get the first day of the month before the currently displayed month
+                var displayedDate = new DateTime(currentYear, currentMonth, 1);
+                var previousMonth = displayedDate.AddMonths(-1);
+        
+                // First, get bills from the previous month
+                string selectQuery = @"SELECT name, amount, type, length, description 
+                              FROM dbo.bills 
+                              WHERE MONTH([date]) = @prevMonth AND YEAR([date]) = @prevYear";
+        
+                using var selectCmd = new SqlCommand(selectQuery, con);
+                selectCmd.Parameters.AddWithValue("@prevMonth", previousMonth.Month);
+                selectCmd.Parameters.AddWithValue("@prevYear", previousMonth.Year);
+        
+                var dt = new DataTable();
+                using (var da = new SqlDataAdapter(selectCmd))
+                {
+                    da.Fill(dt);
+                }
+        
+                if (dt.Rows.Count == 0)
+                {
+                    MessageBox.Show($"No bills found from {previousMonth:MMMM yyyy} to copy.", 
+                          "No Bills Found", 
+                          MessageBoxButtons.OK, 
+                          MessageBoxIcon.Information);
+                    return;
+                }
+        
+                // Insert each bill with the current month's date
+                string insertQuery = @"INSERT INTO dbo.bills (name, amount, [date], type, length, description) 
+                              VALUES (@name, @amount, @date, @type, @length, @description)";
+        
+                int insertedCount = 0;
+                foreach (DataRow row in dt.Rows)
+                {
+                    using var insertCmd = new SqlCommand(insertQuery, con);
+                    insertCmd.Parameters.AddWithValue("@name", row["name"]);
+                    insertCmd.Parameters.AddWithValue("@amount", row["amount"]);
+                    insertCmd.Parameters.AddWithValue("@date", displayedDate); // Use current month's first day
+                    insertCmd.Parameters.AddWithValue("@type", row["type"] ?? DBNull.Value);
+                    insertCmd.Parameters.AddWithValue("@length", row["length"] ?? DBNull.Value);
+                    insertCmd.Parameters.AddWithValue("@description", row["description"] ?? DBNull.Value);
+            
+                    insertedCount += insertCmd.ExecuteNonQuery();
+                }
+        
+                MessageBox.Show($"Successfully copied {insertedCount} bill(s) from {previousMonth:MMMM yyyy} to {displayedDate:MMMM yyyy}.", 
+                       "Bills Added", 
+                       MessageBoxButtons.OK, 
+                       MessageBoxIcon.Information);
+        
+                ReloadAll();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Previous bills error: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
     }
+}
 
     public class EditRecordDialog : Form
     {
@@ -1009,4 +1162,3 @@ ELSE
             DialogResult = DialogResult.OK;
         }
     }
-}
