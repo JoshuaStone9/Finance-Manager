@@ -52,6 +52,8 @@ namespace FM
         private TextBox txtMonthlyAllowance;
         private Label lblMonthlyAllowance;
         private Button editMonthlyAllowance;
+        private Label lblRemainingFund;
+        private TextBox txtRemainingFund;
         private Panel bottomPanel;
         private PictureBox logo;
         private Label title;
@@ -74,7 +76,7 @@ namespace FM
             this.AutoScroll = true;
             this.AutoScrollMargin = new Size(0, 20);
             Text = "All Payments";
-            ClientSize = new Size(1200, 1260);
+            ClientSize = new Size(1400, 1260);
             StartPosition = FormStartPosition.CenterScreen;
             DoubleBuffered = true;
             Font = new System.Drawing.Font("Montserrat", 10, FontStyle.Regular);
@@ -227,7 +229,26 @@ namespace FM
 
             };
 
+            lblRemainingFund = new Label
+            {
+                Text = "Remaining Fund:",
+                AutoSize = true,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(0, 4, 0, 0),
+                Margin = new Padding(0, 0, 16, 0),
+                BackColor = Color.Transparent
+            };
 
+            txtRemainingFund = new TextBox
+            {
+                ReadOnly = true,
+                Width = 150,
+                TextAlign = HorizontalAlignment.Right
+            };
+
+
+            totalLayout.Controls.Add(txtRemainingFund);
+            totalLayout.Controls.Add(lblRemainingFund);
             totalLayout.Controls.Add(txtGrandTotal);
             totalLayout.Controls.Add(lblGrandTotal);
             totalLayout.Controls.Add(txtEmergencyFund);
@@ -244,12 +265,13 @@ namespace FM
             lblCurrentView = new Label
             {
                 Text = $"Viewing: {DateTime.Today:MMMM yyyy}",
-                Font = new System.Drawing.Font("Montserrat", 9F, FontStyle.Italic),
+                Font = new System.Drawing.Font("Montserrat", 9F, FontStyle.Bold),
                 AutoSize = true,
                 BackColor = Color.Transparent,
-                Location = new Point((ClientSize.Width - 150) / 2, 145)
+                Location = new Point((ClientSize.Width - 150) / 2, 105)
             };
             Controls.Add(lblCurrentView);
+            lblCurrentView.BringToFront();
         }
 
         private Button MakePrimaryButton(string text, Point location, Size size, EventHandler onClick)
@@ -383,6 +405,20 @@ ELSE
             }
         }
 
+        private void RemainingFund()
+        {
+            if (decimal.TryParse(txtMonthlyAllowance.Text, NumberStyles.Currency, CultureInfo.GetCultureInfo("en-GB"), out var allowance) &&
+                decimal.TryParse(txtGrandTotal.Text, NumberStyles.Currency, CultureInfo.GetCultureInfo("en-GB"), out var total))
+            {
+                decimal remaining = allowance - total;
+                txtRemainingFund.Text = remaining.ToString("C", CultureInfo.GetCultureInfo("en-GB"));
+            }
+            else
+            {
+                txtRemainingFund.Text = "N/A";
+            }
+        }
+
         private void FilterByDate_click(object? sender, EventArgs e)
         {
             string input = Microsoft.VisualBasic.Interaction.InputBox(
@@ -461,6 +497,7 @@ ELSE
 
                 // Load emergency fund (always shows the same global value)
                 LoadEmergencyFund();
+                RemainingFund();
 
                 UpdateTotal();
                 lblCurrentView.Text = $"Viewing: {new DateTime(year, month, 1):MMMM yyyy}";
@@ -631,6 +668,7 @@ ELSE
                 UpdateTotal();
                 EmergencyFundData();
                 EditMonthlyAllowance();
+                RemainingFund();
 
                 lblCurrentView.Text = $"Viewing: {DateTime.Today:MMMM yyyy}";
             }
