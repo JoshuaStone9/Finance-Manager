@@ -340,9 +340,9 @@ ELSE
         private void EditMonthlyAllowance_click(object? sender, EventArgs e)
         {
             string input = Microsoft.VisualBasic.Interaction.InputBox(
- "Enter new monthly allowance amount:",
- "Edit Monthly Allowance",
- txtMonthlyAllowance.Text);
+                "Enter new monthly allowance amount:",
+                "Edit Monthly Allowance",
+                txtMonthlyAllowance.Text);
 
             if (string.IsNullOrWhiteSpace(input)) return;
 
@@ -352,6 +352,8 @@ ELSE
                 return;
             }
 
+            var month = DateTime.Now.ToString("MMMM", CultureInfo.GetCultureInfo("en-GB"));
+
             try
             {
                 using var con = new SqlConnection(BuildConnStr());
@@ -359,20 +361,22 @@ ELSE
 
                 using var cmd = con.CreateCommand();
                 cmd.CommandText = @"
-IF EXISTS (SELECT 1 FROM dbo.monthly_allowance)
-    UPDATE dbo.monthly_allowance SET amount = @amount;
+IF EXISTS (SELECT 1 FROM dbo.monthly_allowance WHERE [month] = @month)
+    UPDATE dbo.monthly_allowance SET amount = @amount WHERE [month] = @month;
 ELSE
-    INSERT INTO dbo.monthly_allowance (amount) VALUES (@amount);";
+    INSERT INTO dbo.monthly_allowance ([month], amount) VALUES (@month, @amount);";
 
-                var p = cmd.Parameters.Add("@amount", SqlDbType.Decimal);
-                p.Precision = 12;
-                p.Scale = 2;
-                p.Value = newAmount;
+                var pAmt = cmd.Parameters.Add("@amount", SqlDbType.Decimal);
+                pAmt.Precision = 12;
+                pAmt.Scale = 2;
+                pAmt.Value = newAmount;
+
+                cmd.Parameters.Add("@month", SqlDbType.NVarChar, 20).Value = month;
 
                 cmd.ExecuteNonQuery();
 
                 txtMonthlyAllowance.Text = newAmount.ToString("C", CultureInfo.GetCultureInfo("en-GB"));
-                MessageBox.Show("Monthly Allowance updated.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"Monthly Allowance for {month} updated.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 ReloadAll();
             }
             catch (Exception ex)
@@ -380,24 +384,26 @@ ELSE
                 MessageBox.Show("Failed to update Monthly Allowance: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
         private void EditMonthlyAllowance()
         {
             try
             {
+                var month = DateTime.Now.ToString("MMMM", CultureInfo.GetCultureInfo("en-GB"));
+
                 using var con = new SqlConnection(BuildConnStr());
                 con.Open();
-                string query = "SELECT amount FROM dbo.monthly_allowance";
-                using var cmd = new SqlCommand(query, con);
+
+                using var cmd = new SqlCommand(
+                    "SELECT TOP 1 amount FROM dbo.monthly_allowance WHERE [month] = @month",
+                    con);
+
+                cmd.Parameters.Add("@month", SqlDbType.NVarChar, 20).Value = month;
+
                 var result = cmd.ExecuteScalar();
-                if (result != null && result != DBNull.Value)
-                {
-                    decimal amount = Convert.ToDecimal(result);
-                    txtMonthlyAllowance.Text = amount.ToString("C", CultureInfo.GetCultureInfo("en-GB"));
-                }
-                else
-                {
-                    txtMonthlyAllowance.Text = (0m).ToString("C", CultureInfo.GetCultureInfo("en-GB"));
-                }
+                var amount = (result == null || result == DBNull.Value) ? 0m : Convert.ToDecimal(result);
+
+                txtMonthlyAllowance.Text = amount.ToString("C", CultureInfo.GetCultureInfo("en-GB"));
             }
             catch (Exception ex)
             {
@@ -405,14 +411,21 @@ ELSE
             }
         }
 
+
         private void RemainingFund()
         {
             if (decimal.TryParse(txtMonthlyAllowance.Text, NumberStyles.Currency, CultureInfo.GetCultureInfo("en-GB"), out var allowance) &&
                 decimal.TryParse(txtGrandTotal.Text, NumberStyles.Currency, CultureInfo.GetCultureInfo("en-GB"), out var total))
             {
-                decimal remaining = allowance - total;
+                decimal remaining = allowance - total; 
+                remaining += SumAmountColumn(gridSavings);
                 txtRemainingFund.Text = remaining.ToString("C", CultureInfo.GetCultureInfo("en-GB"));
             }
+            //else if (decimal.TryParse(txtMonthlyAllowance.Text, NumberStyles.Currency, CultureInfo.GetCultureInfo("en-GB"), out allowance))
+            //{
+            //    txtRemainingFund.Text = allowance.ToString("C", CultureInfo.GetCultureInfo("en-GB"));
+
+            //}
             else
             {
                 txtRemainingFund.Text = "N/A";
@@ -494,6 +507,8 @@ ELSE
        WHERE MONTH([date]) = @month AND YEAR([date]) = @year 
        ORDER BY [date] DESC";
                 LoadFilteredData(gridSavings, savingsQuery, con, month, year, "savings_id");
+
+                string monthlyAllowanceQuery = "SELECT amount, month_id FROM dbo.monthly_allowance WHERE MONTH([date]) = @month ORDER BY [date] DESC";
 
                 // Load emergency fund (always shows the same global value)
                 LoadEmergencyFund();
@@ -593,7 +608,7 @@ ELSE
             grid.AllowUserToAddRows = false;
             grid.AllowUserToDeleteRows = false;
             grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            grid.MultiSelect = false; // single row selection per grid
+            grid.MultiSelect = true; 
             grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             grid.RowHeadersVisible = false;
             grid.BackgroundColor = Color.White;
@@ -618,7 +633,7 @@ ELSE
         private void AttachSingleSelectionBehavior(DataGridView sourceGrid)
         {
 
-            sourceGrid.MultiSelect = false;
+            sourceGrid.MultiSelect = true;
             sourceGrid.ClearSelection();
 
             sourceGrid.SelectionChanged += (s, e) =>
