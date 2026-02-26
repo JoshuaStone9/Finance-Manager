@@ -7,6 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [7.0.0] - Unreleased
+
+### Added
+- **Month-Specific Monthly Allowance System**
+  - Monthly allowance now tracked per calendar month (e.g., "January", "February")
+  - New `[month]` column (NVARCHAR(20)) in `dbo.monthly_allowance` table
+  - Automatic month detection using `DateTime.Now.ToString("MMMM", CultureInfo.GetCultureInfo("en-GB"))`
+  - Each month can have its own unique allowance amount
+  - Historical allowance tracking across different months
+
+- **Enhanced Remaining Fund Calculation**
+  - Remaining fund now includes savings in calculation
+  - Formula: `(Monthly Allowance - Grand Total) + Savings`
+  - Provides more accurate picture of available funds
+  - Automatically updates when savings data changes
+
+- **Multi-Select Grid Support**
+  - Enabled multi-row selection across all DataGridView grids
+  - Users can select multiple rows using Ctrl+Click for individual selection
+  - Shift+Click support for range selection
+  - Multi-delete functionality - delete multiple records in one operation
+  - Edit functionality restricted to single selection with validation message
+
+### Changed
+- **Monthly Allowance Management**
+  - `EditMonthlyAllowance_click()` now uses month-specific upsert logic
+  - Query pattern: `WHERE [month] = @month` for filtering by month name
+  - Success message displays current month name (e.g., "Monthly Allowance for January updated")
+  - `EditMonthlyAllowance()` loads allowance for current month only
+  - Default value of £0.00 for months with no allowance set
+
+- **Grid Selection Behavior**
+  - Changed from single-select to multi-select mode
+  - `AttachSingleSelectionBehavior()` now allows multiple selections within same grid
+  - Cross-grid selection clearing maintained (selecting in one grid clears others)
+  - `EditSelected()` validates selection count and shows warning if multiple rows selected
+
+- **Database Schema Updates**
+  - `dbo.monthly_allowance` table restructured with `[month]` column
+  - Upsert queries check for existing month before insert/update
+  - Month stored as full month name in British English format
+
+### Fixed
+- **Removed Unused Code**
+  - Deleted unused `monthlyAllowanceQuery` variable from `FilterGridByMonth()` method
+  - Removed invalid column references (`month_id`, `[date]`) that caused compilation warnings
+  - Cleaned up unreachable code paths
+
+### Technical Improvements
+- **Cultural Localization**
+  - Month names formatted using en-GB culture for consistency
+  - Ensures British English month names throughout application
+  - Consistent with existing en-GB currency formatting
+
+- **SQL Query Enhancements**
+  - Month-based filtering using NVARCHAR string comparison
+  - Parameter type: `SqlDbType.NVarChar, 20` for month column
+  - TOP 1 query for retrieving current month's allowance
+  - Proper parameterization prevents SQL injection
+
+- **User Experience Improvements**
+  - Clear feedback when editing monthly allowance with month name in confirmation
+  - Multi-select provides faster bulk operations
+  - Edit restriction prevents accidental multi-record edits
+
+### Breaking Changes
+- **Monthly Allowance Data Migration Required**
+  - Existing single global allowance will need manual migration
+  - Users must set allowance for each month individually
+  - Previous global allowance value not automatically carried forward
+
+---
+
 ## [6.0.0] - 24/02/2026
 
 ### Added
