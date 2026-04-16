@@ -58,6 +58,7 @@ namespace FM
         private Button btnfilterByDate;
         private Button btnClearFilter;
         private Button btnAddPreviousBills;
+        private Button btnAddPreviousInvestments;
 
         // Add this field with your other UI fields
         private Label lblCurrentView;
@@ -113,11 +114,13 @@ namespace FM
             btnfilterByDate = MakeSecondaryButton("Filter by Date", new Point(472, 150), new Size(140, 40), FilterByDate_click);
             btnClearFilter = MakeSecondaryButton("Clear Filter", new Point(624, 150), new Size(140, 40), ClearFilter_click);
             btnAddPreviousBills = MakeSecondaryButton("Add Previous Month's Bills", new Point(776, 150), new Size(200, 40), (s, e) => AddPreviousBills());
+            btnAddPreviousInvestments = MakeSecondaryButton("Add Previous Month's Investments", new Point(1000, 150), new Size(300, 40), (s, e) => AddPreviousInvestments());
             Controls.Add(btnEditSelected);
             Controls.Add(btnDeleteSelected);
             Controls.Add(btnfilterByDate);
             Controls.Add(btnClearFilter);
             Controls.Add(btnAddPreviousBills);
+            Controls.Add(btnAddPreviousInvestments);
 
 
             int left = 16;
@@ -1113,6 +1116,74 @@ ELSE
             catch (Exception ex)
             {
                 MessageBox.Show("Previous bills error: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+    private void AddPreviousInvestments()
+        {
+            try
+            {
+                using var con = new SqlConnection(BuildConnStr());
+                con.Open();
+
+                // Get the first day of the month before the currently displayed month
+                var displayedDate = new DateTime(currentYear, currentMonth, 1);
+                var previousMonth = displayedDate.AddMonths(-1);
+
+                // First, get previous investments from the previous month
+                string selectQuery = @"SELECT investments_id, name, amount, date, category_id, category, length, notes 
+                              FROM dbo.investments 
+                              WHERE MONTH([date]) = @prevMonth AND YEAR([date]) = @prevYear";
+
+                using var selectCmd = new SqlCommand(selectQuery, con);
+                selectCmd.Parameters.AddWithValue("@prevMonth", previousMonth.Month);
+                selectCmd.Parameters.AddWithValue("@prevYear", previousMonth.Year);
+
+                var dt = new DataTable();
+                using (var da = new SqlDataAdapter(selectCmd))
+                {
+                    da.Fill(dt);
+                }
+
+                if (dt.Rows.Count == 0)
+                {
+                    MessageBox.Show($"No bills found from {previousMonth:MMMM yyyy} to copy.",
+                          "No Investments Found",
+                          MessageBoxButtons.OK,
+                          MessageBoxIcon.Information);
+                    return;
+                }
+
+                // Insert each investment with the current month's date
+                string insertQuery = @"INSERT INTO dbo.investments (name, amount, date, category_id, category, length, notes) 
+                              VALUES (@name, @amount, @date, @category_id, @category, @length, @notes)";
+
+                int insertedCount = 0;
+                foreach (DataRow row in dt.Rows)
+                {
+                    using var insertCmd = new SqlCommand(insertQuery, con);
+                    insertCmd.Parameters.AddWithValue("@investments_id", row["investments_id"]);
+                    insertCmd.Parameters.AddWithValue("@name", row["name"]);
+                    insertCmd.Parameters.AddWithValue("@amount", row["amount"]);
+                    insertCmd.Parameters.AddWithValue("@date", displayedDate); // Use current month's first day
+                    insertCmd.Parameters.AddWithValue("@category_id", row["category_id"] ?? DBNull.Value);
+                    insertCmd.Parameters.AddWithValue("@category", row["category"] ?? DBNull.Value);
+                    insertCmd.Parameters.AddWithValue("@length", row["length"] ?? DBNull.Value);
+                    insertCmd.Parameters.AddWithValue("@notes", row["notes"] ?? DBNull.Value);
+
+                    insertedCount += insertCmd.ExecuteNonQuery();
+                }
+
+                MessageBox.Show($"Successfully copied {insertedCount} investments from {previousMonth:MMMM yyyy} to {displayedDate:MMMM yyyy}.",
+                       "Investments Added",
+                       MessageBoxButtons.OK,
+                       MessageBoxIcon.Information);
+
+                ReloadAll();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Previous investments error: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }
