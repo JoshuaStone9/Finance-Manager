@@ -14,18 +14,11 @@ namespace FM
     {
         private static string BuildConnStr()
         {
-            var pwd = Environment.GetEnvironmentVariable("DB_PASSWORD", EnvironmentVariableTarget.User);
-            if (string.IsNullOrWhiteSpace(pwd))
-                throw new InvalidOperationException(
-                    "DB_PASSWORD environment variable not set for the current user.\n" +
-                    "Set it with: setx DB_PASSWORD \"YourPassword\" and restart Visual Studio/your app.");
-
             var builder = new SqlConnectionStringBuilder
             {
-                DataSource = "STONEY,1433",
+                DataSource = "STONEYMINI",
                 InitialCatalog = "Finance_Manager",
-                UserID = "josh",
-                Password = pwd,
+                IntegratedSecurity = true,
                 Encrypt = true,
                 TrustServerCertificate = true
             };
@@ -43,6 +36,7 @@ namespace FM
         private TextBox txtMonthlyAllowance;
         private Label lblMonthlyAllowance;
         private Button editMonthlyAllowance;
+        private Button editMoneyLeftOver;
         private Panel bottomPanel;
         private PictureBox logo;
         private Label title;
@@ -196,6 +190,15 @@ namespace FM
                 FlatStyle = FlatStyle.Flat,
 
             };
+            editMoneyLeftOver = new Button
+            {
+                Text = "Edit Money Left Over",
+                AutoSize = true,
+                Padding = new Padding(12, 6, 12, 6),
+                Margin = new Padding(0, 0, 16, 0),
+                BackColor = Color.FromArgb(255, 150, 150),
+                FlatStyle = FlatStyle.Flat,
+            };
 
             totalLayout.Controls.Add(txtGrandTotal);
             totalLayout.Controls.Add(lblGrandTotal);
@@ -205,6 +208,7 @@ namespace FM
             totalLayout.Controls.Add(txtMonthlyAllowance);
             totalLayout.Controls.Add(lblMonthlyAllowance);
             totalLayout.Controls.Add(editMonthlyAllowance);
+            totalLayout.Controls.Add(editMoneyLeftOver);
             editEmergencyFund.Click += EditEmergencyFund_Click;
             editMonthlyAllowance.Click += EditMonthlyAllowance_click;
             bottomPanel.Controls.Add(totalLayout);

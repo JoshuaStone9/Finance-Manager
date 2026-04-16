@@ -46,18 +46,11 @@ namespace FM
 
         private static string BuildConnStr()
         {
-            var pwd = Environment.GetEnvironmentVariable("DB_PASSWORD", EnvironmentVariableTarget.User);
-            if (string.IsNullOrWhiteSpace(pwd))
-                throw new InvalidOperationException(
-                    "DB_PASSWORD environment variable not set for the current user.\n" +
-                    "Set it with: setx DB_PASSWORD \"YourPassword\" and restart Visual Studio/your app.");
-
             var builder = new SqlConnectionStringBuilder
             {
-                DataSource = "STONEY,1433",
+                DataSource = "STONEYMINI",
                 InitialCatalog = "Finance_Manager",
-                UserID = "josh",
-                Password = pwd,
+                IntegratedSecurity = true,
                 Encrypt = true,
                 TrustServerCertificate = true
             };

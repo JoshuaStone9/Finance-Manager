@@ -20,18 +20,11 @@ namespace FM
 
         private static string BuildConnStr()
         {
-            var pwd = Environment.GetEnvironmentVariable("DB_PASSWORD", EnvironmentVariableTarget.User);
-            if (string.IsNullOrWhiteSpace(pwd))
-                throw new InvalidOperationException(
-                    "DB_PASSWORD environment variable not set for the current user.\n" +
-                    "Set it with: setx DB_PASSWORD \"YourPassword\" and restart Visual Studio/your app.");
-
             var builder = new SqlConnectionStringBuilder
             {
-                DataSource = "STONEY,1433",
+                DataSource = "STONEYMINI",
                 InitialCatalog = "Finance_Manager",
-                UserID = "josh",
-                Password = pwd,
+                IntegratedSecurity = true,
                 Encrypt = true,
                 TrustServerCertificate = true
             };
@@ -352,7 +345,8 @@ ELSE
                 return;
             }
 
-            var month = DateTime.Now.ToString("MMMM", CultureInfo.GetCultureInfo("en-GB"));
+            // Use the current month number (1-12) as the month_id
+            int monthId = currentMonth;
 
             try
             {
@@ -361,22 +355,22 @@ ELSE
 
                 using var cmd = con.CreateCommand();
                 cmd.CommandText = @"
-IF EXISTS (SELECT 1 FROM dbo.monthly_allowance WHERE [month] = @month)
-    UPDATE dbo.monthly_allowance SET amount = @amount WHERE [month] = @month;
+IF EXISTS (SELECT 1 FROM dbo.monthly_allowance WHERE month_id = @monthId)
+    UPDATE dbo.monthly_allowance SET amount = @amount WHERE month_id = @monthId;
 ELSE
-    INSERT INTO dbo.monthly_allowance ([month], amount) VALUES (@month, @amount);";
+    INSERT INTO dbo.monthly_allowance (month_id, amount) VALUES (@monthId, @amount);";
 
                 var pAmt = cmd.Parameters.Add("@amount", SqlDbType.Decimal);
                 pAmt.Precision = 12;
                 pAmt.Scale = 2;
                 pAmt.Value = newAmount;
 
-                cmd.Parameters.Add("@month", SqlDbType.NVarChar, 20).Value = month;
+                cmd.Parameters.Add("@monthId", SqlDbType.Int).Value = monthId;
 
                 cmd.ExecuteNonQuery();
 
                 txtMonthlyAllowance.Text = newAmount.ToString("C", CultureInfo.GetCultureInfo("en-GB"));
-                MessageBox.Show($"Monthly Allowance for {month} updated.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"Monthly Allowance for {new DateTime(currentYear, currentMonth, 1):MMMM yyyy} updated.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 ReloadAll();
             }
             catch (Exception ex)
@@ -389,16 +383,17 @@ ELSE
         {
             try
             {
-                var month = DateTime.Now.ToString("MMMM", CultureInfo.GetCultureInfo("en-GB"));
+                // Use the current month number (1-12) as the month_id
+                int monthId = currentMonth;
 
                 using var con = new SqlConnection(BuildConnStr());
                 con.Open();
 
                 using var cmd = new SqlCommand(
-                    "SELECT TOP 1 amount FROM dbo.monthly_allowance WHERE [month] = @month",
+                    "SELECT TOP 1 amount FROM dbo.monthly_allowance WHERE month_id = @monthId",
                     con);
 
-                cmd.Parameters.Add("@month", SqlDbType.NVarChar, 20).Value = month;
+                cmd.Parameters.Add("@monthId", SqlDbType.Int).Value = monthId;
 
                 var result = cmd.ExecuteScalar();
                 var amount = (result == null || result == DBNull.Value) ? 0m : Convert.ToDecimal(result);
@@ -408,6 +403,33 @@ ELSE
             catch (Exception ex)
             {
                 MessageBox.Show("Monthly Allowance error: " + ex.Message);
+            }
+        }
+
+        private void EditMoneyLeftOver()
+        {
+            try
+            {
+                // Use the current month number (1-12) as the month_id
+                int monthId = currentMonth;
+
+                using var con = new SqlConnection(BuildConnStr());
+                con.Open();
+
+                using var cmd = new SqlCommand(
+                    "SELECT TOP 1 amount FROM dbo.money_left_over WHERE month_id = @monthId",
+                    con);
+
+                cmd.Parameters.Add("@monthId", SqlDbType.Int).Value = monthId;
+
+                var result = cmd.ExecuteScalar();
+                var amount = (result == null || result == DBNull.Value) ? 0m : Convert.ToDecimal(result);
+
+                txtMonthlyAllowance.Text = amount.ToString("C", CultureInfo.GetCultureInfo("en-GB"));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Money Left Over error: " + ex.Message);
             }
         }
 
@@ -508,13 +530,15 @@ ELSE
        ORDER BY [date] DESC";
                 LoadFilteredData(gridSavings, savingsQuery, con, month, year, "savings_id");
 
-                string monthlyAllowanceQuery = "SELECT amount, month_id FROM dbo.monthly_allowance WHERE MONTH([date]) = @month ORDER BY [date] DESC";
-
                 // Load emergency fund (always shows the same global value)
                 LoadEmergencyFund();
+                
+                // Load monthly allowance for the filtered month
+                EditMonthlyAllowance();
+                
+                UpdateTotal();
                 RemainingFund();
 
-                UpdateTotal();
                 lblCurrentView.Text = $"Viewing: {new DateTime(year, month, 1):MMMM yyyy}";
 
                 MessageBox.Show($"Filtered to show records from {month}/{year}", "Filter Applied", MessageBoxButtons.OK, MessageBoxIcon.Information);
