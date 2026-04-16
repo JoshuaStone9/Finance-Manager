@@ -60,6 +60,9 @@ namespace FM
         private Button btnAddPreviousBills;
         private Button btnAddPreviousInvestments;
 
+        private decimal RemainingFundValue => decimal.TryParse(txtRemainingFund?.Text, NumberStyles.Currency, CultureInfo.GetCultureInfo("en-GB"), out var value) ? value : 0;
+        private decimal CarriedOverDebtValue => Math.Max(0, 1200 - RemainingFundValue);
+
         // Add this field with your other UI fields
         private Label lblCurrentView;
 
@@ -463,6 +466,7 @@ ELSE
         "Enter month to filter (1-12):",
         "Filter by Month",
         DateTime.Today.Month.ToString());
+            InsertCarriedOverDebt();
 
             if (!int.TryParse(input, out int month) || month < 1 || month > 12)
             {
@@ -1184,6 +1188,69 @@ ELSE
             catch (Exception ex)
             {
                 MessageBox.Show("Previous investments error: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void InsertCarriedOverDebt()
+        {
+            if (RemainingFundValue >= 1200)
+                return;
+
+            try
+            {
+                using var con = new SqlConnection(BuildConnStr());
+                con.Open();
+
+                var displayedDate = new DateTime(currentYear, currentMonth, 1);
+                var nextMonth = displayedDate.AddMonths(1);
+
+                const string checkQuery = @"SELECT COUNT(1) FROM dbo.extra_expenses WHERE name = @name AND YEAR(duedate) = @year AND MONTH(duedate) = @month";
+
+                using var checkCmd = new SqlCommand(checkQuery, con);
+                checkCmd.Parameters.AddWithValue("@name", "Carried Over Debt");
+                checkCmd.Parameters.AddWithValue("@year", nextMonth.Year);
+                checkCmd.Parameters.AddWithValue("@month", nextMonth.Month);
+
+                int exists = (int)checkCmd.ExecuteScalar();
+
+                if (exists > 0)
+                {
+                    const string updateQuery = @"UPDATE dbo.extra_expenses SET amount = @amount, description = @description WHERE name = @name AND YEAR(duedate) = @year AND MONTH(duedate) = @month";
+
+                    using var updateCmd = new SqlCommand(updateQuery, con);
+                    updateCmd.Parameters.AddWithValue("@amount", CarriedOverDebtValue);
+                    updateCmd.Parameters.AddWithValue("@description", $"Auto-created shortfall from {displayedDate:MMMM yyyy}");
+                    updateCmd.Parameters.AddWithValue("@name", "Carried Over Debt");
+                    updateCmd.Parameters.AddWithValue("@year", nextMonth.Year);
+                    updateCmd.Parameters.AddWithValue("@month", nextMonth.Month);
+
+                    updateCmd.ExecuteNonQuery();
+                }
+                else
+                {
+                    const string insertQuery = @"INSERT INTO dbo.extra_expenses (name, amount, category_id, category, length, duedate, description) VALUES(@name, @amount, @category_id, @category, @length, @duedate, @description)";
+
+                    using var cmd = new SqlCommand(insertQuery, con);
+                    cmd.Parameters.AddWithValue("@name", "Carried Over Debt");
+                    cmd.Parameters.AddWithValue("@amount", CarriedOverDebtValue);
+                    cmd.Parameters.AddWithValue("@category_id", DBNull.Value);
+                    cmd.Parameters.AddWithValue("@category", "Debt");
+                    cmd.Parameters.AddWithValue("@length", DBNull.Value);
+                    cmd.Parameters.AddWithValue("@duedate", nextMonth);
+                    cmd.Parameters.AddWithValue("@description", $"Auto-created shortfall from {displayedDate:MMMM yyyy}");
+
+                    cmd.ExecuteNonQuery();
+                }
+
+                ReloadAll();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Error inserting carried over debt: " + ex.Message,
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
     }
