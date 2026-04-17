@@ -16,7 +16,25 @@
     <Compile Update="AddSavings.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="AllPayments.cs">
+    <Compile Update="AllPayments\AllPayments.Actions.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="AllPayments\AllPayments.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="AllPayments\AllPayments.Data.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="AllPayments\AllPayments.Filters.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="AllPayments\AllPayments.Helpers.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="AllPayments\AllPayments.Totals.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="AllPayments\AllPayments.UI.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="BillsRecord.cs">

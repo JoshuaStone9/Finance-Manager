@@ -28,4 +28,21 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- main resource -->
+    <EmbeddedResource Update="AllPayments\AllPayments.resx">
+      <ManifestResourceName>FM.AllPayments.AllPayments</ManifestResourceName>
+    </EmbeddedResource>
+
+    <!-- totals resource -->
+    <EmbeddedResource Update="AllPayments\AllPayments.Totals.resx">
+      <ManifestResourceName>FM.AllPayments.Totals</ManifestResourceName>
+    </EmbeddedResource>
+
+    <!-- extra file — keep only if needed; ensure unique manifest name if kept -->
+    <EmbeddedResource Update="AllPayments\AllPaymentsTotals.resx" Condition="Exists('AllPayments\AllPaymentsTotals.resx')">
+      <ManifestResourceName>FM.AllPayments.AllPaymentsTotals</ManifestResourceName>
+    </EmbeddedResource>
+  </ItemGroup>
+
 </Project>
