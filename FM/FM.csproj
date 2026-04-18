@@ -14,33 +14,33 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="images\FM_Logo.png">
+    <None Update="Resources\images\FM_Logo.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="images\FM_Logo_Main_Menu.png">
+    <None Update="Resources\images\FM_Logo_Main_Menu.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="images\NotificationBell_No_Notifications.png">
+    <None Update="Resources\images\NotificationBell_No_Notifications.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="images\NotificationBell_With_Notifications.png">
+    <None Update="Resources\images\NotificationBell_With_Notifications.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
   <ItemGroup>
     <!-- main resource -->
-    <EmbeddedResource Update="AllPayments\AllPayments.resx">
+    <EmbeddedResource Update="Forms\AllPayments\AllPayments.resx">
       <ManifestResourceName>FM.AllPayments.AllPayments</ManifestResourceName>
     </EmbeddedResource>
 
     <!-- totals resource -->
-    <EmbeddedResource Update="AllPayments\AllPayments.Totals.resx">
+    <EmbeddedResource Update="Forms\AllPayments\AllPayments.Totals.resx">
       <ManifestResourceName>FM.AllPayments.Totals</ManifestResourceName>
     </EmbeddedResource>
 
     <!-- extra file — keep only if needed; ensure unique manifest name if kept -->
-    <EmbeddedResource Update="AllPayments\AllPaymentsTotals.resx" Condition="Exists('AllPayments\AllPaymentsTotals.resx')">
+    <EmbeddedResource Update="Forms\AllPayments\AllPaymentsTotals.resx" Condition="Exists('AllPayments\AllPaymentsTotals.resx')">
       <ManifestResourceName>FM.AllPayments.AllPaymentsTotals</ManifestResourceName>
     </EmbeddedResource>
   </ItemGroup>

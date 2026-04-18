@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;  // BindingList
 
-namespace FM
+namespace FM.Data
 {
     public static class BillStore
     {

@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace FM
+namespace FM.Forms
 {
     public partial class MainMenu : Form
     {
@@ -33,19 +33,19 @@ namespace FM
         {
             
             InitializeComponent();
-            this.Font = new Font("Montserrat", 10, FontStyle.Regular);
+            Font = new Font("Montserrat", 10, FontStyle.Regular);
 
 
         
 // Form settings
-             this.Text = "Finance Manager";
-            this.Size = new Size(500, 500);   // bigger form
-            this.StartPosition = FormStartPosition.CenterScreen;
-            this.Paint += Form1_Paint; // gradient background
+             Text = "Finance Manager";
+            Size = new Size(500, 500);   // bigger form
+            StartPosition = FormStartPosition.CenterScreen;
+            Paint += Form1_Paint; // gradient background
 
             // Heading
             PictureBox logo = new PictureBox();
-            logo.Image = Image.FromFile("images/FM_Logo_Main_Menu.png");
+            logo.Image = Image.FromFile("Resources/images/FM_Logo_Main_Menu.png");
             logo.Size = new Size(180, 180);
             logo.Location = new Point(160, 0);
             logo.SizeMode = PictureBoxSizeMode.StretchImage;
@@ -150,7 +150,7 @@ namespace FM
             InitialiseAllFieldsButton.Click += InitialiseAllFieldsButton_Click;
 
             // Load and resize the bell image
-            Image notificationBellImg = Image.FromFile("images/NotificationBell_No_Notifications.png");
+            Image notificationBellImg = Image.FromFile("Resources/images/NotificationBell_No_Notifications.png");
             Image resized = new Bitmap(notificationBellImg, new Size(70, 70));
 
             // Create the button
@@ -175,15 +175,15 @@ namespace FM
 
 
             // Add controls to form
-            this.Controls.Add(managePaymentsButton);
-            this.Controls.Add(billsButton);
-            this.Controls.Add(extraExpensesButton);
-            this.Controls.Add(savingsButton);
-            this.Controls.Add(investmentsButton);
-            this.Controls.Add(allPaymentsButton);
-            this.Controls.Add(logo);
-            this.Controls.Add(notificationBell);
-            this.Controls.Add(addMoneyButton);
+            Controls.Add(managePaymentsButton);
+            Controls.Add(billsButton);
+            Controls.Add(extraExpensesButton);
+            Controls.Add(savingsButton);
+            Controls.Add(investmentsButton);
+            Controls.Add(allPaymentsButton);
+            Controls.Add(logo);
+            Controls.Add(notificationBell);
+            Controls.Add(addMoneyButton);
         }
         private static string BuildConnStr()
         {
@@ -202,12 +202,12 @@ namespace FM
         {
             // Create gradient from top to bottom
             using (LinearGradientBrush brush = new LinearGradientBrush(
-                this.ClientRectangle,
+                ClientRectangle,
                 Color.LightCoral,   // top color
                 Color.White,        // bottom color
                 LinearGradientMode.Vertical))
             {
-                e.Graphics.FillRectangle(brush, this.ClientRectangle);
+                e.Graphics.FillRectangle(brush, ClientRectangle);
             }
         }
 

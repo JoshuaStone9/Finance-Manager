@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace FM
+namespace FM.Data
 {
     public static class InvestmentStore
     {

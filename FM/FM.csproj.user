@@ -1,58 +1,58 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Compile Update="AddBill.cs">
+    <Compile Update="Forms\AddBill.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="AddExtraExpense.cs">
+    <Compile Update="Forms\AddExtraExpense.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="AddInvestment.cs">
+    <Compile Update="Forms\AddInvestment.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="AddMoney.cs">
+    <Compile Update="Forms\AddMoney.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="AddSavings.cs">
+    <Compile Update="Forms\AddSavings.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="AllPayments\AllPayments.Actions.cs">
+    <Compile Update="Forms\AllPayments\AllPayments.Actions.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="AllPayments\AllPayments.cs">
+    <Compile Update="Forms\AllPayments\AllPayments.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="AllPayments\AllPayments.Data.cs">
+    <Compile Update="Forms\AllPayments\AllPayments.Data.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="AllPayments\AllPayments.Filters.cs">
+    <Compile Update="Forms\AllPayments\AllPayments.Filters.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="AllPayments\AllPayments.Helpers.cs">
+    <Compile Update="Forms\AllPayments\AllPayments.Helpers.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="AllPayments\AllPayments.Totals.cs">
+    <Compile Update="Forms\AllPayments\AllPayments.Totals.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="AllPayments\AllPayments.UI.cs">
+    <Compile Update="Forms\AllPayments\AllPayments.UI.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="BillsRecord.cs">
+    <Compile Update="Forms\BillsRecord.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="CalculateInvestments.cs">
+    <Compile Update="Services\CalculateInvestments.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="CarriedOverDebtProjection.cs">
+    <Compile Update="Services\CarriedOverDebtProjection.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="ExtraExpensesRecord.cs">
+    <Compile Update="Forms\ExtraExpensesRecord.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="MainMenu.cs">
+    <Compile Update="Forms\MainMenu.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="NotificationCenter.cs">
+    <Compile Update="Services\NotificationCenter.cs">
       <SubType>Form</SubType>
     </Compile>
   </ItemGroup>

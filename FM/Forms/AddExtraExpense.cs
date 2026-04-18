@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using FM.Data;
+using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -8,7 +9,7 @@ using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 
-namespace FM
+namespace FM.Forms
 {
     public partial class AddExtraExpense : Form
     {
@@ -79,7 +80,7 @@ namespace FM
 
             logo = new PictureBox
             {
-                Image = Image.FromFile("images/FM_Logo_Main_Menu.png"),
+                Image = Image.FromFile("Resources/images/FM_Logo_Main_Menu.png"),
                 SizeMode = PictureBoxSizeMode.StretchImage,
                 Size = new Size(120, 120),
                 Location = new Point((ClientSize.Width - 120) / 2, 0),
@@ -263,16 +264,16 @@ namespace FM
                 return;
             }
 
-            int categoryId = (cboCategory.SelectedValue is int v) ? v : 0;
+            int categoryId = cboCategory.SelectedValue is int v ? v : 0;
             string categoryName = (cboCategory.SelectedItem as CategoryItem)?.Name ?? string.Empty;
 
-            var rec = new ExtraExpenseRecord
+            var rec = new FM.Data.ExtraExpenseRecord
             {
                 Name = txtName.Text.Trim(),
                 Amount = amount,
                 Category = categoryName,
                 Type = cboType.SelectedItem?.ToString() ?? "One-off",
-                Frequency = (cboFrequency.Visible ? (cboFrequency.SelectedItem?.ToString() ?? "Monthly") : "N/A"),
+                Frequency = cboFrequency.Visible ? cboFrequency.SelectedItem?.ToString() ?? "Monthly" : "N/A",
                 DateIncurred = dtpDate.Value.Date,
                 Notes = txtNotes.Text.Trim()
             };
@@ -325,7 +326,7 @@ namespace FM
             }
 
             if (string.Equals(cboType.SelectedItem?.ToString(), "Recurring", StringComparison.OrdinalIgnoreCase)
-                && (cboFrequency.SelectedIndex < 0))
+                && cboFrequency.SelectedIndex < 0)
             {
                 cboFrequency.BackColor = Color.MistyRose;
                 return "Please choose a Frequency for Recurring expenses.";
@@ -471,7 +472,7 @@ WHERE (e.category IS NULL OR e.category = '');", conn))
                 cboCategory.SelectedIndex = 0;
         }
 
-        private void InsertExtraExpenseToDb(ExtraExpenseRecord rec, int categoryId, string categoryName)
+        private void InsertExtraExpenseToDb(FM.Data.ExtraExpenseRecord rec, int categoryId, string categoryName)
         {
             using var conn = new SqlConnection(BuildConnStr());
             conn.Open();
@@ -495,10 +496,10 @@ VALUES
             if (string.Equals(rec.Type, "Recurring", StringComparison.OrdinalIgnoreCase))
                 cmd.Parameters.Add("@freq", SqlDbType.NVarChar, 100).Value = rec.Frequency ?? (object)DBNull.Value;
             else
-                cmd.Parameters.Add("@freq", SqlDbType.NVarChar, 100).Value = (object)DBNull.Value;
+                cmd.Parameters.Add("@freq", SqlDbType.NVarChar, 100).Value = DBNull.Value;
 
             cmd.Parameters.Add("@d", SqlDbType.Date).Value = rec.DateIncurred;
-            cmd.Parameters.Add("@desc", SqlDbType.NVarChar).Value = string.IsNullOrWhiteSpace(rec.Notes) ? (object)DBNull.Value : rec.Notes;
+            cmd.Parameters.Add("@desc", SqlDbType.NVarChar).Value = string.IsNullOrWhiteSpace(rec.Notes) ? DBNull.Value : rec.Notes;
 
             cmd.ExecuteNonQuery();
         }

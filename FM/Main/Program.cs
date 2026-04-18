@@ -1,4 +1,6 @@
-namespace FM
+using FM.Forms; 
+
+namespace FM.Main
 {
     internal static class Program
     {

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace FM
+namespace FM.Data
 {
     public static class SavingsStore
     {

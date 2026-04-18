@@ -1,8 +1,9 @@
-﻿using System;
+﻿using FM.Data;
+using System;
 using System.Linq;
 using System.Windows.Forms;
 
-namespace FM
+namespace FM.Forms
 {
     public partial class ExtraExpensesRecord : Form
     {
@@ -49,7 +50,7 @@ namespace FM
 
         private void SetupGrid()
         {
-            // Binding to store (make sure ExtraExpenseStore.Expenses is BindingList<ExtraExpenseRecord>)
+            // Binding to store (make sure ExtraExpenseStore.Expenses is BindingList<FM.Data.ExtraExpenseRecord>)
             _bsExtExp.DataSource = ExtraExpenseStore.Expenses;
             gridExpenses.AutoGenerateColumns = false;
             gridExpenses.DataSource = _bsExtExp;
@@ -59,7 +60,7 @@ namespace FM
             // Expense ID
             gridExpenses.Columns.Add(new DataGridViewTextBoxColumn
             {
-                DataPropertyName = nameof(ExtraExpenseRecord.Expense_ID),
+                DataPropertyName = nameof(FM.Data.ExtraExpenseRecord.Expense_ID),
                 HeaderText = "Expense ID",
                 MinimumWidth = 120,
                 ReadOnly = true
@@ -68,7 +69,7 @@ namespace FM
             // Name
             gridExpenses.Columns.Add(new DataGridViewTextBoxColumn
             {
-                DataPropertyName = nameof(ExtraExpenseRecord.Name),
+                DataPropertyName = nameof(FM.Data.ExtraExpenseRecord.Name),
                 HeaderText = "Name",
                 MinimumWidth = 160,
                 ReadOnly = true
@@ -77,7 +78,7 @@ namespace FM
             // Amount (currency)
             gridExpenses.Columns.Add(new DataGridViewTextBoxColumn
             {
-                DataPropertyName = nameof(ExtraExpenseRecord.Amount),
+                DataPropertyName = nameof(FM.Data.ExtraExpenseRecord.Amount),
                 HeaderText = "Amount",
                 MinimumWidth = 110,
                 ReadOnly = true,
@@ -87,7 +88,7 @@ namespace FM
             // Category
             gridExpenses.Columns.Add(new DataGridViewTextBoxColumn
             {
-                DataPropertyName = nameof(ExtraExpenseRecord.Category),
+                DataPropertyName = nameof(FM.Data.ExtraExpenseRecord.Category),
                 HeaderText = "Category",
                 MinimumWidth = 120,
                 ReadOnly = true
@@ -96,7 +97,7 @@ namespace FM
             // Type
             gridExpenses.Columns.Add(new DataGridViewTextBoxColumn
             {
-                DataPropertyName = nameof(ExtraExpenseRecord.Type),
+                DataPropertyName = nameof(FM.Data.ExtraExpenseRecord.Type),
                 HeaderText = "Type",
                 MinimumWidth = 120,
                 ReadOnly = true
@@ -105,7 +106,7 @@ namespace FM
             // Frequency
             gridExpenses.Columns.Add(new DataGridViewTextBoxColumn
             {
-                DataPropertyName = nameof(ExtraExpenseRecord.Frequency),
+                DataPropertyName = nameof(FM.Data.ExtraExpenseRecord.Frequency),
                 HeaderText = "Frequency",
                 MinimumWidth = 120,
                 ReadOnly = true
@@ -114,7 +115,7 @@ namespace FM
             // Date Incurred
             gridExpenses.Columns.Add(new DataGridViewTextBoxColumn
             {
-                DataPropertyName = nameof(ExtraExpenseRecord.DateIncurred),
+                DataPropertyName = nameof(FM.Data.ExtraExpenseRecord.DateIncurred),
                 HeaderText = "Date",
                 MinimumWidth = 110,
                 ReadOnly = true,
@@ -124,7 +125,7 @@ namespace FM
             // Notes
             gridExpenses.Columns.Add(new DataGridViewTextBoxColumn
             {
-                DataPropertyName = nameof(ExtraExpenseRecord.Notes),
+                DataPropertyName = nameof(FM.Data.ExtraExpenseRecord.Notes),
                 HeaderText = "Notes",
                 MinimumWidth = 200,
                 ReadOnly = true,
@@ -159,7 +160,7 @@ namespace FM
 
             var toRemove = gridExpenses.SelectedRows
                 .Cast<DataGridViewRow>()
-                .Select(r => r.DataBoundItem as ExtraExpenseRecord)
+                .Select(r => r.DataBoundItem as FM.Data.ExtraExpenseRecord)
                 .Where(x => x != null)
                 .ToList();
 
@@ -173,18 +174,5 @@ namespace FM
             // If you have designer code, move it here.
             // Otherwise, leave empty to avoid CS0103.
         }
-    }
-
-    // Your data model for extra expenses
-    public class ExtraExpenseRecord
-    {
-        public string Expense_ID { get; set; }
-        public string Name { get; set; }
-        public decimal Amount { get; set; }
-        public string Category { get; set; }
-        public string Type { get; set; }
-        public string Frequency { get; set; }
-        public DateTime DateIncurred { get; set; }
-        public string Notes { get; set; }
     }
 }

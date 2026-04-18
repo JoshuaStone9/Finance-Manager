@@ -1,5 +1,7 @@
+using System;
 
-
+namespace FM.Data
+{
     public class ExtraExpenseRecord
     {
         public string Expense_ID { get; set; } = "";
@@ -7,8 +9,9 @@
         public decimal Amount { get; set; }
         public string Category { get; set; } = "Other";
         public string Type { get; set; } = "One-off";  // or Recurring
-        public string Frequency { get; set; } = "N/A";      // when Recurring
+        public string Frequency { get; set; } = "N/A"; // when Recurring
         public DateTime DateIncurred { get; set; } = DateTime.Today;
         public string Notes { get; set; } = "";
     }
+}
 
