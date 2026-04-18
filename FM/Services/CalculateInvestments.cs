@@ -1,4 +1,4 @@
-﻿using Npgsql;
+﻿using Microsoft.Data.SqlClient;
 using System;
 using System.Data;
 using System.Drawing;
@@ -11,8 +11,22 @@ namespace FM
 {
     public partial class CalculateInvestments : Form
     {
-        private const string ConnStr =
-            "Host=localhost;Database=Finance_Manager;Username=postgres;Password=banana001;SslMode=Disable";
+        // Use the same SQL Server connection builder as other forms
+        private static readonly string ConnStr = BuildConnStr();
+
+        private static string BuildConnStr()
+        {
+            var builder = new SqlConnectionStringBuilder
+            {
+                DataSource = "STONEYMINI",
+                InitialCatalog = "Finance_Manager",
+                IntegratedSecurity = true,
+                Encrypt = true,
+                TrustServerCertificate = true
+            };
+
+            return builder.ConnectionString;
+        }
 
         // UI
         private DataGridView dgvInvestments;
@@ -261,11 +275,11 @@ namespace FM
             e.Graphics.FillRectangle(brush, ClientRectangle);
         }
 
-        // ----- Your existing data/logic below (unchanged) -----
+        // ----- Data/logic -----
 
         private void RetrieveInvestments(object? sender, EventArgs e)
         {
-            using var conn = new NpgsqlConnection(ConnStr);
+            using var conn = new SqlConnection(ConnStr);
             conn.Open();
 
             const string sql = @"
@@ -273,14 +287,14 @@ namespace FM
                     investments_id,
                     name,
                     amount,
-                    date::date AS date,
+                    [date] AS date,
                     category,
                     length,
                     notes
-                FROM investments
+                FROM dbo.investments
                 ORDER BY investments_id DESC;";
 
-            using var da = new NpgsqlDataAdapter(sql, conn);
+            using var da = new SqlDataAdapter(sql, conn);
             var dt = new DataTable();
             da.Fill(dt);
 
